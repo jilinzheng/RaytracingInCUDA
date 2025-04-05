@@ -18,6 +18,7 @@
 #include "sphere.h"
 
 
+// world generation
 int main() {
     hittable_list world;
 
