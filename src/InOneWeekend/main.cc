@@ -1,3 +1,4 @@
+
 //==============================================================================================
 // Originally written in 2016 by Peter Shirley <ptrshrl@gmail.com>
 //
@@ -9,9 +10,15 @@
 // along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
 //==============================================================================================
 
-#include "rtweekend.h"
 
+// Note: Watch out! Include order will matter!
+#include "rtweekend.h"
+#define USE_GPU 0
+#if USE_GPU
+#include "camera_cuda.h"
+#else
 #include "camera.h"
+#endif
 #include "hittable.h"
 #include "hittable_list.h"
 #include "material.h"
@@ -20,13 +27,16 @@
 
 // world generation
 int main() {
+    std::clog << "USE_GPU = " << USE_GPU << "\n\n";
+
     hittable_list world;
 
     auto ground_material = make_shared<lambertian>(color(0.5, 0.5, 0.5));
     world.add(make_shared<sphere>(point3(0,-1000,0), 1000, ground_material));
 
-    for (int a = -11; a < 11; a++) {
-        for (int b = -11; b < 11; b++) {
+    // range is originally from -11 to 11
+    for (int a = -1; a < 1; a++) {
+        for (int b = -1; b < 1; b++) {
             auto choose_mat = random_double();
             point3 center(a + 0.9*random_double(), 0.2, b + 0.9*random_double());
 
@@ -64,9 +74,11 @@ int main() {
 
     camera cam;
 
+    // 640 * 360 = 230,400 pixels = 230,400 GPU threads
+    // given one thread per ray/pixel
     cam.aspect_ratio      = 16.0 / 9.0;
-    cam.image_width       = 1200;
-    cam.samples_per_pixel = 10;
+    cam.image_width       = 640;
+    cam.samples_per_pixel = 1000;
     cam.max_depth         = 20;
 
     cam.vfov     = 20;

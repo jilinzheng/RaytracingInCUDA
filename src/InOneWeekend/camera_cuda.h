@@ -1,7 +1,8 @@
-#ifndef CAMERA_H
-#define CAMERA_H
+#ifndef CAMERA_CUDA_H
+#define CAMERA_CUDA_H
 //==============================================================================================
 // Originally written in 2016 by Peter Shirley <ptrshrl@gmail.com>
+// Modified in 2025 by Jilin Zheng for EC527 @ BU.
 //
 // To the extent possible under law, the author(s) have dedicated all copyright and related and
 // neighboring rights to this software to the public domain worldwide. This software is
@@ -11,8 +12,30 @@
 // along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
 //==============================================================================================
 
+#include <cstdio>
+#include <cstdlib>
+#include <math.h>
+#include <time.h>
 #include "hittable.h"
 #include "material.h"
+#include "vec3.h"
+#include "cuPrintf.cu"
+#include "cuPrintf.cuh"
+
+
+// assertion to check for errors
+#define CUDA_SAFE_CALL(ans) { gpuAssert((ans), (char *)__FILE__, __LINE__); }
+inline void gpuAssert(cudaError_t code, char *file, int line, bool abort=true)
+{
+    if (code != cudaSuccess)
+    {
+        fprintf(stderr, "CUDA_SAFE_CALL: %s %s %d\n",
+                cudaGetErrorString(code), file, line);
+        if (abort) exit(code);
+    }
+}
+
+#define NUM_BLOCKS_PER_GRID_DIR
 
 
 class camera {
@@ -45,7 +68,6 @@ class camera {
                     ray r = get_ray(i, j);
                     pixel_color += ray_color(r, max_depth, world);
                 }
-                // color is pixel_color / samples_per_pixel; pixel_samples_scale = 1/samples_per_pixel
                 write_color(std::cout, pixel_samples_scale * pixel_color);
             }
         }

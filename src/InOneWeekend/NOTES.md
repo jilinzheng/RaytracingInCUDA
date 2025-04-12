@@ -36,8 +36,7 @@
   1. calculate the ray from the "eye" (camera) through the pixel
   2. determine which objects the ray intersects, and
   3. compute a color for the closest intersection point
-- use image width to calculate height to keep aspect ratio consistent
-- viewport: virtual rectangle in 3D world that contains the grid of image pixel locations
+- use image width to calculate height to keep aspect ratio consistentxdfff- viewport: virtuaxfl rectangle in 3D world that contains the grid of image pixel locations
   - if pixels are spaced the same distance horizontally as they are vertically, the viewport that bounds them will have the same aspect ratio as the rendered image
   - the distance between two adjacent pixels is called the pixel spacing, and square pixels is the standard
 - since `aspect_ratio` is an ideal ratio, it may not be the _actual_ ratio between `image_width` and `image_height`, as `image_height` is rounded down to the nearest integer and it cannot be less than one
@@ -135,6 +134,98 @@
 - two public methods: `initialize()` and `render()`, two private helper methods `get_ray()` and `ray_color()`
 - calls `initialize()` at the start of `render()`
 
+## 8 Antialiasing
+
+- jaggedness/"stair step" edges in rendered images is commonly referred to as "aliasing"
+  - when a real camera takes a picture, there is no aliasing because the edges are a blend of foreground and background; it also has effectively infinite resolution
+    - we can achieve this by averaging a bunch of samples per pixel
+- point sampling (single ray through the center of each pixel) *is problematic* because it does *not* integrate the light falling on a discrete region of an image
+  - we **want** our ray tracer to integrate the continuous light falling on a dsicrete region of a rendered image and **avoid** point sampling
+  - we sample the **square region** centered at the target pixel that extends halfway to each of the four neighboring pixels
+
+### 8.1 Some Random Number Utilities
+
+- found in `rtweekend.h`; random numbers fall in the range [0,1)
+
+### 8.2 Generating Pixels with Multiple Samples
+
+- for a single pixel composed of multiple samples, we select sampels from the area surrounding the pixel and average the resulting light/color values together
+  - add full colors from each sample, then divide by the number of total samples, before writing the color
+    - `interval::clamp` ensures final result remains within the proper [0,1) bounds (used in `color.h`)
+- in `camera.h`, `camera::get_ray(i,j)` generates different samples for each pixel using the `sample_square()` helper function that generates a random sample point within the unit square centered at the origin
+  - this is then transformed from the ideal square back to the particular pixel currently being sampled
+  - `sample_disk()` is an alternative method used in a future book; it also relies on `random_in_unit_disk()`, defined later on
+
+## 9 Diffuse Materials
+
+- diffuse = matte
+- there are multiple approaches, but this book separates geometry and materials (so that a material can be assigned to multiple sphere/vice-versa)
+
+### 9.1 A Simple Diffuse Material
+
+- diffuse/matte objects that don't emit their own light take on colors of the environment, but do modulate the environment colors with their own intrinsic colors
+- light that reflects off a diffuse surface has its direction randomized
+- light can also be absorbed instead of reflected; the darker the surface, the more likely the ray is absorbed
+- the first algorithm used for diffuse materials here has an *equal* probability for a ray to bounce in any direction away from the surface
+  - some more random vector utility functions are in `vec3.h`
+- to manipulate random vectors so that the resulting vectors are on the surface of a hemisphere, a **rejection method** is used
+  - a rejection method works by repeatedly generating random samples until we produce a sample that meets the desired criteria, i.e., keep rejecting bad samples until you find a good one
+- the rejection method here is as follows:
+  1. generate a random vector inside the unit sphere
+  2. normalize this vector to extend it to the sphere surface
+  3. invert the normalized vecotor if it falls onto the wrong hemisphere
+- `random_unit_vector()` is in `vec3.h`
+  - also rejects the "black hole" around the center, due to a floating-point underflow issue where coordinates close to the center of the sphere (close to zero) can make the norm of the vector zero, and cause the normalization to yield infinity as coordinates of the vector
+- as for determining if it is in the right hemisphere, we can use the dot product between the surface normal and the random vector:
+  - if the dot product is positive, then the random vector is already in the right hemisphere
+  - if the dot product is negative, then we invert the vector to be in the right hemisphere
+  - `vec3.h` has a `random_on_hemisphere()` function
+- if a ray bounces off of a material and keeps
+  - 100% of its color, we say the material is *white*
+  - 0% of its color, we say the material is *black*
+
+### 9.2 Limiting the Number of Child Rays
+
+- `ray_color()` is recursive and stops when it fails to hit anything; to prevent the stack from overflowing, a `max_depth` is used, where no light is returned at maximum depth
+
+### 9.3 Fixing Shadow Acne
+
+- a ray will attempt to accurately calculate the intersection point when it intersects with a surface; however, this calculation is susceptible to floating-point rounding errors which can cause the intersection point to be slightly off
+  - the simplest fix is just to ignore hits that are very close to the calculated intersection point
+
+### 9.4 True Lambertian Reflection
+
+- a more accurate representation of diffuse objects' scattering is the non-uniform Lambertian distribution, which scatters reflected rays proportional to cos(phi), where phi is the angle between the reflected ray and the surface normal (reminder that previously it was equally scatted inn all directions)
+  - this results in a higher probability of the reflected ray scattering in a direction near the surface normal, and less likley to scatter in directions away from the normal
+- the implementation becomes `hit-record`'s normal + `random_unit_vector()` in `ray_color()`
+
+### 9.5 Using Gamma Correction for Accurate Color Intensity
+
+- up until now, images have been stored in linear space instead of gamma space (the transformation has not been applied), while computer programs to view images expect that images have been "gamma corrected" (in gamma space)
+  - transform in `color.h`
+
+## 10 Metal
+
+### 10.1 An Abstract Class for Materials
+
+- the author likes material classes that encapsulate each material's unique behavior, instead of an universal material class with a ton of parameters; for this program the material needs to do two things:
+  1. produce a scattered ray (or say it absorbed the incident ray, the ray of light that strikes a surface)
+  2. if scattered, say how much the ray should be attenuated (reduction in intensity of a ray as it strikes a material, caused by absorption or scattering)
+- the `material` class in `material.h` performs these operations
+
+### 10.2 A Data Structure to Describe Ray-Object Intersections
+
+- `hit_record` is used to store a bunch of information and avoid a bunch of arguments
+  - we add a material pointer that will point at the sphere's material when the sphere was first initialized (consequently `sphere.h` gets some extra material fields)
+
+### 10.3 Modeling Light Scatter and Reflectance
+
+- *albedo* defines *fractional reflectance*; it varies with material color and can also vary with incident viewing direction (the direction of the incoming ray)
+- Lambertian (diffuse) reflectance can either always scatter and attenuate light according to its reflectance *R* or it can sometimes scatter (with probability 1-*R*) with no attenuation (where a ray that isn't scattered is just absorbed into the material); it can also be a mixture of both
+  - the authors choose to always scatter
+  - the `lambertian` class is in `material.h`
+
 ## Miscellaneous
 
 - C++ references are aliases; they do not have their own address; taking the address using `&` gives the address of the referent
+- #include preprocessor directives' order will matter in this project! Just the way the authors have set it up, but be careful when modifying any #includes!
