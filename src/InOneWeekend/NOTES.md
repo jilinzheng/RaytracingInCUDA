@@ -224,6 +224,10 @@
 - Lambertian (diffuse) reflectance can either always scatter and attenuate light according to its reflectance *R* or it can sometimes scatter (with probability 1-*R*) with no attenuation (where a ray that isn't scattered is just absorbed into the material); it can also be a mixture of both
   - the authors choose to always scatter
   - the `lambertian` class is in `material.h`
+- in the `lambertian` class, if the random unit vector is exactly opposite the normal vector, the two will sum to zero and result in a zero scatter direction vector
+  - this is intercepted by using the `near_zero()` helper in `vec3.h`
+
+### 10.4 Mirrored Light Reflection
 
 ## Miscellaneous
 

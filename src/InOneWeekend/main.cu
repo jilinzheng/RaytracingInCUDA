@@ -13,7 +13,7 @@
 
 // Note: Watch out! Include order will matter!
 #include "rtweekend.h"
-#include "camera.h"
+#include "camera_cuda.h"
 #include "hittable.h"
 #include "hittable_list.h"
 #include "material.h"
@@ -66,6 +66,9 @@ int main() {
     world.add(make_shared<sphere>(point3(4, 1, 0), 1.0, material3));
 
     camera cam;
+
+    // 640 * 360 = 230,400 pixels = 230,400 GPU threads
+    // given one thread per ray/pixel
     cam.aspect_ratio      = 16.0 / 9.0;
     cam.image_width       = 640;
     cam.samples_per_pixel = 1000;
