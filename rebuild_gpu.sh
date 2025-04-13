@@ -1,3 +1,3 @@
 #!/usr/bin/bash
 
-nvcc main.cu -o main.cu -g
+nvcc ./src/CUDAInOneWeekend/main.cu -o ./src/CUDAInOneWeekend/gputrace -g
