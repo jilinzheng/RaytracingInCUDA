@@ -1,3 +1,3 @@
 #!/usr/bin/bash
 
-nvcc ./src/CUDAInOneWeekend/main.cu -o ./src/CUDAInOneWeekend/gputrace -g
+nvcc /usr4/ugrad/jilin/ec527/super-raytrace/src/CUDAInOneWeekend/main.cu -o /usr4/ugrad/jilin/ec527/super-raytrace/src/CUDAInOneWeekend/cuda-raytrace

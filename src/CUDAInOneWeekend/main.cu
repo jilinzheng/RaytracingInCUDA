@@ -12,7 +12,7 @@
 
 // Note: Watch out! Include order will matter!
 #include "rtweekend.h"
-#include "camera_cuda.h"
+#include "camera.h"
 #include "hittable.h"
 #include "hittable_list.h"
 #include "material.h"
@@ -30,17 +30,17 @@ inline void gpuAssert(cudaError_t code, char *file, int line, bool abort=true)
     }
 }
 
-__global__ void render(float *pixel_buffer, int max_x, int max_y) {
+// just the basic chapter 2 image to start!
+__global__ void render(float *pixel_buffer, int img_width, int img_height) {
     int i = threadIdx.x + blockIdx.x * blockDim.x;
     int j = threadIdx.y + blockIdx.y * blockDim.y;
-    if((i >= max_x) || (j >= max_y)) return;
-    int pixel_index = j*max_x*3 + i*3;
-    pixel_buffer[pixel_index + 0] = float(i) / max_x;
-    pixel_buffer[pixel_index + 1] = float(j) / max_y;
-    pixel_buffer[pixel_index + 2] = 0.2;
+    if((i >= img_width) || (j >= img_height)) return;
+    int pixel_index = j*img_width*3 + i*3;
+    pixel_buffer[pixel_index + 0] = float(i) / img_width;
+    pixel_buffer[pixel_index + 1] = float(j) / img_height;
+    pixel_buffer[pixel_index + 2] = 0.0;
 }
 
-// world generation
 int main() {
     // select GPU
     CUDA_SAFE_CALL(cudaSetDevice(0));
@@ -57,13 +57,29 @@ int main() {
 
     // buffer to store device-calculated pixels, to later be printed on host;
     // using Unified Memory, i.e., accessible by both host and device
-    vec3 *pixel_buffer;
+    float *pixel_buffer;
     CUDA_SAFE_CALL(cudaMallocManaged((void **)&pixel_buffer, num_pixels*sizeof(vec3)));
 
     // call the render() kernel
     render<<<dimGrid, dimBlock>>>(pixel_buffer, img_width, img_height);
     CUDA_SAFE_CALL(cudaGetLastError());
     CUDA_SAFE_CALL(cudaDeviceSynchronize());
+
+    // output pixel_buffer as a .ppm image
+    std::cout << "P3\n" << img_width << " " << img_height << "\n255\n";
+    for (int j = 0; j < img_height; ++j) {
+        for (int i = 0; i < img_width; ++i) {
+            size_t pixel_index = j*3*img_width + i*3;
+            float r = pixel_buffer[pixel_index + 0];
+            float g = pixel_buffer[pixel_index + 1];
+            float b = pixel_buffer[pixel_index + 2];
+            int ir = int(255.99*r);
+            int ig = int(255.99*g);
+            int ib = int(255.99*b);
+            std::cout << ir << " " << ig << " " << ib << "\n";
+        }
+    }
+    CUDA_SAFE_CALL(cudaFree(pixel_buffer));
 
     return 0;
 }
