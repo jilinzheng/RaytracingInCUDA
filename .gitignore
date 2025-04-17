@@ -1,4 +1,8 @@
 # Git Ignore Rules for raytracing.github.io
 
 build/
-/*.ppm
+*.ppm
+*.vscode
+src/CUDAInOneWeekend/cuda-raytrace
+src/CUDAInOneWeekend/*.ppm
+src/CUDAInOneWeekend/cuda-raytrace
