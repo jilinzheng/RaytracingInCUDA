@@ -16,17 +16,17 @@
 
 class ray {
   public:
-    ray() {}
+    __device__ ray() {}
 
-    ray(const point3& origin, const vec3& direction) : orig(origin), dir(direction) {}
+    __device__ ray(const point3& origin, const vec3& direction) : orig(origin), dir(direction) {}
 
     // return immutable references to members
-    const point3& origin() const  { return orig; }
-    const vec3& direction() const { return dir; }
+    __device__ const point3& origin() const  { return orig; }
+    __device__ const vec3& direction() const { return dir; }
 
     // P(t) = A + t*b, where A is ray origin, b is ray direction,
     // and t is ray parameter
-    point3 at(float t) const {
+    __device__ point3 at(float t) const {
         return orig + t*dir;
     }
 
