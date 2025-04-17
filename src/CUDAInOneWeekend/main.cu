@@ -132,28 +132,28 @@ void initialize_camera(int h_image_width, int h_image_height) {
 
 __device__ float hit_sphere(const point3& center, float radius, const ray& r) {
     vec3 oc = center - r.origin();
-    auto a = r.direction().length_squared();
-    auto h = dot(r.direction(), oc);
-    auto c = oc.length_squared() - radius*radius;
-    auto discriminant = h*h - a*c;
+    float a = r.direction().length_squared();
+    float h = dot(r.direction(), oc);
+    float c = oc.length_squared() - radius*radius;
+    float discriminant = h*h - a*c;
 
     if (discriminant < 0) {
-        return -1.0;
+        return -1.0f;
     } else {
         return (h - std::sqrt(discriminant)) / a;
     }
 }
 
 __device__ color ray_color(const ray& r) {
-    float t = hit_sphere(point3(0,0,-1), 0.5, r);
-    if (t > 0.0) {
+    float t = hit_sphere(point3(0,0,-1), 0.5f, r);
+    if (t > 0.0f) {
         vec3 N = unit_vector(r.at(t) - vec3(0,0,-1));
-        return 0.5*color(N.x()+1, N.y()+1, N.z()+1);
+        return 0.5f*color(N.x()+1, N.y()+1, N.z()+1);
     }
 
     vec3 unit_direction = unit_vector(r.direction());
-    auto a = 0.5*(unit_direction.y() + 1.0);
-    return (1.0-a)*color(1.0, 1.0, 1.0) + a*color(0.5, 0.7, 1.0);
+    float a = 0.5f*(unit_direction.y() + 1.0f);
+    return (1.0f-a)*color(1.0f, 1.0f, 1.0f) + a*color(0.5f, 0.7f, 1.0f);
 }
 
 // blue-white gradient from chapter 4
@@ -191,8 +191,8 @@ int main() {
     dim3 dimBlock(num_threads_per_block_row,num_threads_per_block_row);
 
     /* configure the virtual camera */
-    float focal_length = 1.0;
-    float viewport_height = 2.0;
+    float focal_length = 1.0f;
+    float viewport_height = 2.0f;
     float viewport_width = viewport_height * (float(img_width)/img_height);
     point3 camera_center = point3(0, 0, 0);
 
@@ -207,7 +207,7 @@ int main() {
     // Calculate the location of the upper left pixel.
     vec3 viewport_upper_left = camera_center
                              - vec3(0, 0, focal_length) - viewport_u/2 - viewport_v/2;
-    vec3 pixel00_loc = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v);
+    vec3 pixel00_loc = viewport_upper_left + 0.5f * (pixel_delta_u + pixel_delta_v);
     /* end virtual camera config */
 
     // call the render() kernel
@@ -221,9 +221,9 @@ int main() {
     for (int j = 0; j < img_height; ++j) {      // rows
         for (int i = 0; i < img_width; ++i) {   // cols
             size_t pixel_index = j*img_width+i;
-            int ir = int(255.99*pixel_buffer[pixel_index].x());
-            int ig = int(255.99*pixel_buffer[pixel_index].y());
-            int ib = int(255.99*pixel_buffer[pixel_index].z());
+            int ir = int(255.99f*pixel_buffer[pixel_index].x());
+            int ig = int(255.99f*pixel_buffer[pixel_index].y());
+            int ib = int(255.99f*pixel_buffer[pixel_index].z());
             std::cout << ir << " " << ig << " " << ib << "\n";
         }
     }
