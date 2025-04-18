@@ -11,13 +11,15 @@ class camera {
         int     img_height;             // rendered image height
         int     samples_per_pixel;      // number of random samples for each pixel
         float   pixel_samples_scale;    // color scale factor for sum of pixel samples
+        int     max_depth;              // maximum recursion depth for ray bounces
         point3  center;                 // camera center
         point3  pixel00_loc;            // location of pixel 0, 0
         vec3    pixel_delta_u;          // offset to pixel to the right
         vec3    pixel_delta_v;          // offset to pixel below
 
-        camera(int img_width, int img_height, int samples_per_pixel) :
-            img_width(img_width), img_height(img_height), samples_per_pixel(samples_per_pixel) {
+        camera(int img_width, int img_height, int samples_per_pixel, int max_depth) :
+            img_width(img_width), img_height(img_height),
+            samples_per_pixel(samples_per_pixel), max_depth(max_depth) {
                 initialize();
             }
 
@@ -45,19 +47,47 @@ class camera {
   };
 
 
-__device__ color ray_color(const ray& r, const world& world) {
-    // track the hits for this particular ray
-    hit_record rec;
-
-    // hits will be the sphere's surface normal
-    if (hit_world(world, r, interval(0.0f, infinity), rec)) {
-        return 0.5f * (rec.normal + color(1,1,1));
+__device__ color ray_color(const ray& r, int depth, const world& world,
+    curandState *thread_rand_state) {
+    // for loop instead of recursion;
+    // GPU freaks out when using curandState with recursion
+    ray curr_ray = r;
+    // NOTE: before adding cur_attenuation, no hits for some reason...
+    float cur_attenuation = 1.0f;
+    for (int i = 0; i < depth; ++i) {
+        // track hits
+        hit_record rec;
+        if (hit_world(world,curr_ray,interval(0.001f,infinity),rec)) {
+            vec3 direction = rec.normal + random_unit_vector(thread_rand_state);
+            cur_attenuation *= 0.5f;
+            curr_ray = ray(rec.p, direction);
+        }
+        // blue-to-white gradient background
+        else {
+            vec3 unit_direction = unit_vector(r.direction());
+            float a = 0.5f*(unit_direction.y() + 1.0f);
+            return cur_attenuation*((1.0f-a)*color(1.0f, 1.0f, 1.0f) + a*color(0.5f, 0.7f, 1.0f));
+        }
     }
+    // max depth reached
+    return vec3(0,0,0);
 
-    // background blue-to-white gradient
-    vec3 unit_direction = unit_vector(r.direction());
-    float a = 0.5f*(unit_direction.y() + 1.0f);
-    return (1.0f-a)*color(1.0f, 1.0f, 1.0f) + a*color(0.5f, 0.7f, 1.0f);
+    // // maximum recursion depth reached, return a black pixel
+    // if (depth <= 0) return color(0,0,0);
+
+    // // track the hits for this particular ray
+    // hit_record rec;
+
+    // // hits will be the sphere's surface normal
+    // if (hit_world(world, r, interval(0.001f, infinity), rec)) {
+    //     vec3 direction = rec.normal + random_unit_vector(*thread_rand_state);
+    //     return 0.5f * ray_color(ray(rec.p, direction), depth-1, world, thread_rand_state);
+    // }
+
+    // // background blue-to-white gradient
+    // vec3 unit_direction = unit_vector(r.direction());
+    // float a = 0.5f*(unit_direction.y() + 1.0f);
+    // return (1.0f-a)*color(1.0f, 1.0f, 1.0f) + a*color(0.5f, 0.7f, 1.0f);
 }
 
 __global__ void render(vec3 *pixel_buffer, camera cam, world *d_world, curandState *rand_state) {
@@ -87,10 +117,16 @@ __global__ void render(vec3 *pixel_buffer, camera cam, world *d_world, curandSta
         // accumulate the various samples' colors
         // NOTE: multiple accumulators and/or loop unrolling here?!!!
         // samples can be incremented by k = 2, 4, 8, etc.
-        pixel_color += ray_color(r, *d_world);
+        pixel_color += ray_color(r, cam.max_depth, *d_world, &thread_rand_state);
     }
 
-    pixel_buffer[j*cam.img_width+i] = cam.pixel_samples_scale * pixel_color;
+    // scale color back down (divide by number of samples)
+    // and perform gamma correction
+    pixel_color *= cam.pixel_samples_scale;
+    pixel_color = color(linear_to_gamma(pixel_color.x()),
+                        linear_to_gamma(pixel_color.y()),
+                        linear_to_gamma(pixel_color.z()));
+    pixel_buffer[j*cam.img_width+i] = pixel_color;
 }
 
 

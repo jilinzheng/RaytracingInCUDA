@@ -7,8 +7,8 @@
 using color = vec3;
 
 
-inline float linear_to_gamma(float linear_component) {
-    if (linear_component > 0) return std::sqrt(linear_component);
+__device__ inline float linear_to_gamma(float linear_component) {
+    if (linear_component > 0) return sqrtf(linear_component);
     return 0;
 }
 

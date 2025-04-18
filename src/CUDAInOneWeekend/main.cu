@@ -27,16 +27,27 @@ int main() {
     // select GPU
     CUDA_SAFE_CALL(cudaSetDevice(0));
 
-    // 1280 * 800 = 1,024,000 pixels, divisible by warp size 32
-    // also divisible by thread block's row size (8)
-    // these dimensions match serial base
-    int img_width = 640, img_height = 360;
+    /* image/camera configuration */
     // these dimensions match the CUDA reference
     // int img_width = 1280, img_height = 800;
+    // these dimensions match serial cpu baseline/reference
+    int img_width = 640, img_height = 360;
+    // both are divisible by warp size (32) and threads per row (8)
+
+    // total pixels
     int num_pixels = img_width*img_height;
+
+    // samples to take around a pixel for antialiasing
     int samples_per_pixel = 100;
+
+    // maximum recursion depth
+    // NOTE: can also just use a for loop! but is there any benefit???
+    int max_depth = 50;
+
     // initialize the camera
-    camera cam(img_width,img_height,samples_per_pixel);
+    camera cam(img_width,img_height,samples_per_pixel,max_depth);
+    /* end image/camera configuration*/
+
 
     // buffer to store device-calculated pixels, to later be printed on host;
     // using Unified Memory, i.e., accessible by both host and device
