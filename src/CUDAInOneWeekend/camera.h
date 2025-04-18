@@ -45,26 +45,6 @@ class camera {
   };
 
 
-__device__ vec3 sample_square(curandState thread_rand_state) {
-    // returns the vector to a random point in the [-.5,-.5]-[+.5,+.5] unit square
-    // return vec3(random_float() - 0.5f, random_float() - 0.5f, 0);
-    return vec3(curand_uniform(&thread_rand_state) - 0.5f,
-                curand_uniform(&thread_rand_state) - 0.5f,
-                0);
-}
-
-__device__ ray get_ray(int i, int j, camera cam, curandState thread_rand_state) {
-    // construct a ray originating from camera center,
-    // directed at a randomly sampled point around the pixel location i,j
-    vec3 offset = sample_square(thread_rand_state);
-    point3 pixel_sample = cam.pixel00_loc
-                        + ((i + offset.x()) * cam.pixel_delta_u)
-                        + ((j + offset.y()) * cam.pixel_delta_v);
-    point3 ray_origin = cam.center;
-    vec3 ray_direction = pixel_sample - ray_origin;
-    return ray(ray_origin, ray_direction);
-}
-
 __device__ color ray_color(const ray& r, const world& world) {
     // track the hits for this particular ray
     hit_record rec;
@@ -91,7 +71,22 @@ __global__ void render(vec3 *pixel_buffer, camera cam, world *d_world, curandSta
     int samples_per_pixel = cam.samples_per_pixel;
     int sample = 0;
     for (sample = 0; sample < samples_per_pixel; ++sample) {
-        ray r = get_ray(i, j, cam, thread_rand_state);
+        // construct a ray originating from camera center,
+        // directed at a randomly sampled point (in a square)
+        // around the pixel location i,j
+        vec3 offset = vec3(curand_uniform(&thread_rand_state) - 0.5f,
+                           curand_uniform(&thread_rand_state) - 0.5f,
+                           0);
+        point3 pixel_sample = cam.pixel00_loc
+                               + ((i + offset.x()) * cam.pixel_delta_u)
+                               + ((j + offset.y()) * cam.pixel_delta_v);
+        point3 ray_origin = cam.center;
+        vec3 ray_direction = pixel_sample - ray_origin;
+        ray r(ray_origin, ray_direction);
+
+        // accumulate the various samples' colors
+        // NOTE: multiple accumulators and/or loop unrolling here?!!!
+        // samples can be incremented by k = 2, 4, 8, etc.
         pixel_color += ray_color(r, *d_world);
     }
 
