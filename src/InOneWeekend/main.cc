@@ -28,8 +28,8 @@ int main() {
     world.add(make_shared<sphere>(point3(0,-1000,0), 1000, ground_material));
 
     // range is originally from -11 to 11
-    for (int a = -1; a < 1; a++) {
-        for (int b = -1; b < 1; b++) {
+    for (int a = -11; a < 11; a++) {
+        for (int b = -11; b < 11; b++) {
             auto choose_mat = random_double();
             point3 center(a + 0.9*random_double(), 0.2, b + 0.9*random_double());
 
@@ -68,7 +68,7 @@ int main() {
     camera cam;
     cam.aspect_ratio      = 16.0 / 9.0;
     cam.image_width       = 640;
-    cam.samples_per_pixel = 1000;
+    cam.samples_per_pixel = 100;
     cam.max_depth         = 20;
 
     cam.vfov     = 20;

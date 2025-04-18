@@ -1,22 +1,9 @@
-
-//==============================================================================================
-// Originally written in 2016 by Peter Shirley <ptrshrl@gmail.com>
-//
-// To the extent possible under law, the author(s) have dedicated all copyright and related and
-// neighboring rights to this software to the public domain worldwide. This software is
-// distributed without any warranty.
-//
-// You should have received a copy (see file COPYING.txt) of the CC0 Public Domain Dedication
-// along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
-//==============================================================================================
-
 // Note: Watch out! Include order will matter!
 #include "rtweekend.h"
-// #include "camera.h"
 #include "hittable.h"
-// #include "hittable_list.h"
+// #include "camera.h"
 // #include "material.h"
-// #include "sphere.h"
+
 
 // assertion to check for errors
 #define CUDA_SAFE_CALL(ans) { gpuAssert((ans), (char *)__FILE__, __LINE__); }
@@ -28,12 +15,13 @@ inline void gpuAssert(cudaError_t code, char *file, int line, bool abort=true) {
     }
 }
 
+
 __device__ color ray_color(const ray& r, const world& world) {
     // track the hits for this particular ray
     hit_record rec;
 
     // hits will be the sphere's surface normal
-    if (hit_world(world,r,0.0f,infinity,rec)) {
+    if (hit_world(world, r, interval(0.0f, infinity), rec)) {
         return 0.5f * (rec.normal + color(1,1,1));
     }
 
