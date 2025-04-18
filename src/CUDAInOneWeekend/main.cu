@@ -1,9 +1,9 @@
 // Note: Watch out! Include order will matter!
 #include "rtweekend.h"
 #include "hittable.h"
+#include "color.h"
 // #include "camera.h"
 // #include "material.h"
-
 
 // assertion to check for errors
 #define CUDA_SAFE_CALL(ans) { gpuAssert((ans), (char *)__FILE__, __LINE__); }
@@ -31,7 +31,6 @@ __device__ color ray_color(const ray& r, const world& world) {
     return (1.0f-a)*color(1.0f, 1.0f, 1.0f) + a*color(0.5f, 0.7f, 1.0f);
 }
 
-// blue-white gradient from chapter 4
 __global__ void render(vec3 *pixel_buffer, int img_width, int img_height, point3 pixel00_loc,
     vec3 pixel_delta_u, vec3 pixel_delta_v, point3 camera_center,world *d_world) {
     int i = threadIdx.x + blockIdx.x * blockDim.x;
@@ -79,15 +78,15 @@ int main() {
     float viewport_width = viewport_height * (float(img_width)/img_height);
     point3 camera_center = point3(0, 0, 0);
 
-    // Calculate the vectors across the horizontal and down the vertical viewport edges.
+    // calculate the vectors across the horizontal and down the vertical viewport edges
     vec3 viewport_u = vec3(viewport_width, 0, 0);
     vec3 viewport_v = vec3(0, -viewport_height, 0);
 
-    // Calculate the horizontal and vertical delta vectors from pixel to pixel.
+    // calculate the horizontal and vertical delta vectors from pixel to pixel
     vec3 pixel_delta_u = viewport_u / img_width;
     vec3 pixel_delta_v = viewport_v / img_height;
 
-    // Calculate the location of the upper left pixel.
+    // calculate the location of the upper left pixel
     vec3 viewport_upper_left = camera_center
                              - vec3(0, 0, focal_length) - viewport_u/2 - viewport_v/2;
     vec3 pixel00_loc = viewport_upper_left + 0.5f * (pixel_delta_u + pixel_delta_v);

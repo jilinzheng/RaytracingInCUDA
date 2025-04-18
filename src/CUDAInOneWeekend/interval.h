@@ -1,19 +1,13 @@
 #ifndef INTERVAL_H
 #define INTERVAL_H
-//==============================================================================================
-// To the extent possible under law, the author(s) have dedicated all copyright and related and
-// neighboring rights to this software to the public domain worldwide. This software is
-// distributed without any warranty.
-//
-// You should have received a copy (see file COPYING.txt) of the CC0 Public Domain Dedication
-// along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
-//==============================================================================================
+
 
 class interval {
   public:
     float min, max;
 
-    __device__ interval() : min(+infinity), max(-infinity) {} // Default interval is empty
+    // default interval is empty
+    __device__ interval() : min(+infinity), max(-infinity) {}
     __device__ interval(float min, float max) : min(min), max(max) {}
 
     __device__ float size() const {
