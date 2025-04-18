@@ -3,6 +3,7 @@
 #include "hittable.h"
 #include "color.h"
 #include "camera.h"
+#include "curand_kernel.h"
 // #include "material.h"
 
 // assertion to check for errors
@@ -15,32 +16,6 @@ inline void gpuAssert(cudaError_t code, char *file, int line, bool abort=true) {
     }
 }
 
-
-__device__ color ray_color(const ray& r, const world& world) {
-    // track the hits for this particular ray
-    hit_record rec;
-
-    // hits will be the sphere's surface normal
-    if (hit_world(world, r, interval(0.0f, infinity), rec)) {
-        return 0.5f * (rec.normal + color(1,1,1));
-    }
-
-    // background blue-to-white gradient
-    vec3 unit_direction = unit_vector(r.direction());
-    float a = 0.5f*(unit_direction.y() + 1.0f);
-    return (1.0f-a)*color(1.0f, 1.0f, 1.0f) + a*color(0.5f, 0.7f, 1.0f);
-}
-
-__global__ void render(vec3 *pixel_buffer, camera cam, world *d_world) {
-    int i = threadIdx.x + blockIdx.x * blockDim.x;
-    int j = threadIdx.y + blockIdx.y * blockDim.y;
-    if((i >= cam.img_width) || (j >= cam.img_height)) return;
-
-    point3 pixel_center = cam.pixel00_loc+(i*cam.pixel_delta_u)+(j*cam.pixel_delta_v);
-    vec3 ray_direction = pixel_center - cam.center;
-    ray r(cam.center,ray_direction);
-    pixel_buffer[j*cam.img_width+i] = ray_color(r,*d_world);
-}
 
 __global__ void update_world_pointer(world *w, sphere *spheres) {
     if (threadIdx.x == 0 && blockIdx.x == 0) {
@@ -59,6 +34,9 @@ int main() {
     // these dimensions match the CUDA reference
     // int img_width = 1280, img_height = 800;
     int num_pixels = img_width*img_height;
+    int samples_per_pixel = 100;
+    // initialize the camera
+    camera cam(img_width,img_height,samples_per_pixel);
 
     // buffer to store device-calculated pixels, to later be printed on host;
     // using Unified Memory, i.e., accessible by both host and device
@@ -71,8 +49,6 @@ int main() {
         img_height/num_threads_per_block_row);
     dim3 dimBlock(num_threads_per_block_row,num_threads_per_block_row);
 
-    // initialize the camera
-    camera cam(img_width,img_height);
 
     /* world creation */
     // host allocations and initializations
@@ -99,20 +75,30 @@ int main() {
     CUDA_SAFE_CALL(cudaDeviceSynchronize());
     /* end world creation*/
 
+
+    // setup random number generation in device
+    curandState *d_rand_state;
+    CUDA_SAFE_CALL(cudaMalloc((void **)&d_rand_state, num_pixels*sizeof(curandState)));
+    init_rng<<<dimGrid, dimBlock>>>(img_width, img_height, d_rand_state);
+    CUDA_SAFE_CALL(cudaGetLastError());
+    CUDA_SAFE_CALL(cudaDeviceSynchronize());
+
     // call the render() kernel
-    render<<<dimGrid, dimBlock>>>(pixel_buffer, cam, d_world);
+    render<<<dimGrid, dimBlock>>>(pixel_buffer, cam, d_world, d_rand_state);
     CUDA_SAFE_CALL(cudaGetLastError());
     CUDA_SAFE_CALL(cudaDeviceSynchronize());
 
     // output pixel_buffer as a .ppm image
+    const interval intensity(0.000f,0.999f);
     std::cout << "P3\n" << img_width << " " << img_height << "\n255\n";
     for (int j = 0; j < img_height; ++j) {      // rows
         for (int i = 0; i < img_width; ++i) {   // cols
-            size_t pixel_index = j*img_width+i;
-            int ir = int(255.99f*pixel_buffer[pixel_index].x());
-            int ig = int(255.99f*pixel_buffer[pixel_index].y());
-            int ib = int(255.99f*pixel_buffer[pixel_index].z());
-            std::cout << ir << " " << ig << " " << ib << "\n";
+            size_t pixel_index = j * img_width + i;
+            vec3 pixel = pixel_buffer[pixel_index];
+            int r = int(256 * intensity.clamp(pixel.x()));
+            int g = int(256 * intensity.clamp(pixel.y()));
+            int b = int(256 * intensity.clamp(pixel.z()));
+            std::cout << r << " " << g << " " << b << "\n";
         }
     }
 

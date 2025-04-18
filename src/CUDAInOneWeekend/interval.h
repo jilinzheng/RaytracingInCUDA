@@ -7,8 +7,8 @@ class interval {
     float min, max;
 
     // default interval is empty
-    __device__ interval() : min(+infinity), max(-infinity) {}
-    __device__ interval(float min, float max) : min(min), max(max) {}
+    __host__ __device__ interval() : min(+infinity), max(-infinity) {}
+    __host__ __device__ interval(float min, float max) : min(min), max(max) {}
 
     __device__ float size() const {
         return max - min;
@@ -22,7 +22,7 @@ class interval {
         return min < x && x < max;
     }
 
-    __device__ float clamp(float x) const {
+    float clamp(float x) const {
         if (x < min) return min;
         if (x > max) return max;
         return x;
