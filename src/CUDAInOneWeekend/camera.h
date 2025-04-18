@@ -53,6 +53,7 @@ __device__ color ray_color(const ray& r, int depth, const world& world,
     // GPU freaks out when using curandState with recursion
     ray curr_ray = r;
     // NOTE: before adding cur_attenuation, no hits for some reason...
+    // REASON: background would overwrite without the halved attenuations!
     float cur_attenuation = 1.0f;
     for (int i = 0; i < depth; ++i) {
         // track hits
@@ -66,11 +67,12 @@ __device__ color ray_color(const ray& r, int depth, const world& world,
         else {
             vec3 unit_direction = unit_vector(r.direction());
             float a = 0.5f*(unit_direction.y() + 1.0f);
+            // return (1.0f-a)*color(1.0f, 1.0f, 1.0f) + a*color(0.5f, 0.7f, 1.0f);
             return cur_attenuation*((1.0f-a)*color(1.0f, 1.0f, 1.0f) + a*color(0.5f, 0.7f, 1.0f));
         }
     }
     // max depth reached
-    return vec3(0,0,0);
+    return color(0,0,0);
 
     // // maximum recursion depth reached, return a black pixel
     // if (depth <= 0) return color(0,0,0);
