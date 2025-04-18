@@ -2,7 +2,7 @@
 #include "rtweekend.h"
 #include "hittable.h"
 #include "color.h"
-// #include "camera.h"
+#include "camera.h"
 // #include "material.h"
 
 // assertion to check for errors
@@ -31,16 +31,15 @@ __device__ color ray_color(const ray& r, const world& world) {
     return (1.0f-a)*color(1.0f, 1.0f, 1.0f) + a*color(0.5f, 0.7f, 1.0f);
 }
 
-__global__ void render(vec3 *pixel_buffer, int img_width, int img_height, point3 pixel00_loc,
-    vec3 pixel_delta_u, vec3 pixel_delta_v, point3 camera_center,world *d_world) {
+__global__ void render(vec3 *pixel_buffer, camera cam, world *d_world) {
     int i = threadIdx.x + blockIdx.x * blockDim.x;
     int j = threadIdx.y + blockIdx.y * blockDim.y;
-    if((i >= img_width) || (j >= img_height)) return;
+    if((i >= cam.img_width) || (j >= cam.img_height)) return;
 
-    point3 pixel_center = pixel00_loc+(i*pixel_delta_u)+(j*pixel_delta_v);
-    vec3 ray_direction = pixel_center - camera_center;
-    ray r(camera_center,ray_direction);
-    pixel_buffer[j*img_width+i] = ray_color(r,*d_world);
+    point3 pixel_center = cam.pixel00_loc+(i*cam.pixel_delta_u)+(j*cam.pixel_delta_v);
+    vec3 ray_direction = pixel_center - cam.center;
+    ray r(cam.center,ray_direction);
+    pixel_buffer[j*cam.img_width+i] = ray_color(r,*d_world);
 }
 
 __global__ void update_world_pointer(world *w, sphere *spheres) {
@@ -72,25 +71,8 @@ int main() {
         img_height/num_threads_per_block_row);
     dim3 dimBlock(num_threads_per_block_row,num_threads_per_block_row);
 
-    /* virtual camera config */
-    float focal_length = 1.0f;
-    float viewport_height = 2.0f;
-    float viewport_width = viewport_height * (float(img_width)/img_height);
-    point3 camera_center = point3(0, 0, 0);
-
-    // calculate the vectors across the horizontal and down the vertical viewport edges
-    vec3 viewport_u = vec3(viewport_width, 0, 0);
-    vec3 viewport_v = vec3(0, -viewport_height, 0);
-
-    // calculate the horizontal and vertical delta vectors from pixel to pixel
-    vec3 pixel_delta_u = viewport_u / img_width;
-    vec3 pixel_delta_v = viewport_v / img_height;
-
-    // calculate the location of the upper left pixel
-    vec3 viewport_upper_left = camera_center
-                             - vec3(0, 0, focal_length) - viewport_u/2 - viewport_v/2;
-    vec3 pixel00_loc = viewport_upper_left + 0.5f * (pixel_delta_u + pixel_delta_v);
-    /* end virtual camera config */
+    // initialize the camera
+    camera cam(img_width,img_height);
 
     /* world creation */
     // host allocations and initializations
@@ -118,8 +100,7 @@ int main() {
     /* end world creation*/
 
     // call the render() kernel
-    render<<<dimGrid, dimBlock>>>(pixel_buffer, img_width, img_height, pixel00_loc,
-        pixel_delta_u, pixel_delta_v, camera_center, d_world);
+    render<<<dimGrid, dimBlock>>>(pixel_buffer, cam, d_world);
     CUDA_SAFE_CALL(cudaGetLastError());
     CUDA_SAFE_CALL(cudaDeviceSynchronize());
 
