@@ -36,9 +36,9 @@ int main() {
 
     /* image/camera configuration */
     // these dimensions match the CUDA reference
-    int img_width = 1280, img_height = 600;
+    // int img_width = 1280, img_height = 600;
     // these dimensions match serial cpu baseline/reference
-    // int img_width = 640, img_height = 360;
+    int img_width = 640, img_height = 360;
     // both are divisible by warp size (32) and threads per row (8)
 
     // total pixels
@@ -47,8 +47,7 @@ int main() {
     // samples to take around a pixel for antialiasing
     int samples_per_pixel = 100;
 
-    // maximum recursion depth
-    // NOTE: can also just use a for loop! but is there any benefit???
+    // maximum recursion depth (implemented with for-loop)
     int max_depth = 50;
 
     // initialize the camera

@@ -52,12 +52,8 @@ class camera {
 __device__ color ray_color(const ray& r, int max_depth, const world& world,
     curandState *thread_rand_state) {
     // for loop instead of recursion;
-    // GPU freaks out when using curandState with recursion
-    // something related to not being able to detect stack size...
+    // GPU freaks out when not being able to detect stack size...
     ray curr_ray = r;
-    // NOTE: before adding cur_attenuation, no hits for some reason...
-    // REASON: background would overwrite without halved attenuations!
-    // attenuation = reflection, absorption, scattering, spreading
     color curr_attenuation = color(1.0f,1.0f,1.0f);
     for (int i = 0; i < max_depth; ++i) {
         // track hits
@@ -70,6 +66,7 @@ __device__ color ray_color(const ray& r, int max_depth, const world& world,
                     if (lambertian_scatter(r,rec,attenuation,scattered,thread_rand_state)) {
                         curr_attenuation = curr_attenuation * attenuation;
                         curr_ray = scattered;
+                        break;
                     }
                     else return color(0.0,0.0,0.0);
                 }
@@ -77,13 +74,11 @@ __device__ color ray_color(const ray& r, int max_depth, const world& world,
                     if (metal_scatter(r,rec,attenuation,scattered)) {
                         curr_attenuation = curr_attenuation * attenuation;
                         curr_ray = scattered;
+                        break;
                     }
                     else return color(0.0,0.0,0.0);
                 }
             }
-            // vec3 direction = rec.normal + random_unit_vector(thread_rand_state);
-            // cur_attenuation *= 0.9f;    // NOTE: control attenuation
-            // curr_ray = ray(rec.p, direction);
         }
         // blue-to-white gradient background
         else {
