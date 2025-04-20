@@ -6,12 +6,15 @@
 #include "interval.h"
 
 
+struct material;
+
 // base struct for hit records (no methods)
 struct hit_record {
     point3 p;
     vec3 normal;
     float t;
     bool front_face;
+    material *mat;
 };
 
 // sets hit record normal vector (see chapter 6.4)
@@ -26,9 +29,11 @@ __device__ void set_face_normal(struct hit_record& rec, const ray& r,
 struct sphere {
     point3 center;
     float radius;
+    material *mat;
 
     __host__ __device__ sphere() {}
-    __host__ __device__ sphere(point3 cen, float r) : center(cen), radius(r) {}
+    __host__ __device__ sphere(point3 cen, float r, material *mat)
+        : center(cen), radius(r), mat(mat) {}
 };
 
 // function-based hit testing instead of virtual methods
@@ -55,6 +60,7 @@ __device__ bool hit_sphere(const sphere& s, const ray& r,
     rec.p = r.at(rec.t);
     vec3 outward_normal = (rec.p - s.center) / s.radius;
     set_face_normal(rec,r,outward_normal);
+    rec.mat = s.mat;
 
     return true;
 }

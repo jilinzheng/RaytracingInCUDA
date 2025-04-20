@@ -4,7 +4,7 @@
 #include "color.h"
 #include "camera.h"
 #include "curand_kernel.h"
-// #include "material.h"
+#include "material.h"
 
 // assertion to check for errors
 #define CUDA_SAFE_CALL(ans) { gpuAssert((ans), (char *)__FILE__, __LINE__); }
@@ -23,15 +23,22 @@ __global__ void update_world_pointer(world *w, sphere *spheres) {
     }
 }
 
+__global__ void update_material_pointers(sphere* d_spheres, material* d_materials, int num_spheres) {
+    if (threadIdx.x == 0 && blockIdx.x == 0) {
+        for (int i = 0; i < num_spheres; ++i)
+            d_spheres[i].mat = &d_materials[i];
+    }
+}
+
 int main() {
     // select GPU
     CUDA_SAFE_CALL(cudaSetDevice(0));
 
     /* image/camera configuration */
     // these dimensions match the CUDA reference
-    // int img_width = 1280, img_height = 800;
+    int img_width = 1280, img_height = 600;
     // these dimensions match serial cpu baseline/reference
-    int img_width = 640, img_height = 360;
+    // int img_width = 640, img_height = 360;
     // both are divisible by warp size (32) and threads per row (8)
 
     // total pixels
@@ -63,25 +70,44 @@ int main() {
 
     /* world creation */
     // host allocations and initializations
-    int num_spheres = 2;
+    material h_material_ground = material(MaterialType::LAMBERTIAN, color(0.8f,0.8f,0.0f));
+    material h_material_center = material(MaterialType::LAMBERTIAN, color(0.1f,0.2f,0.5f));
+    material h_material_left = material(MaterialType::METAL, color(0.8f,0.8f,0.8f));
+    material h_material_right = material(MaterialType::METAL, color(0.8f,0.6f,0.2f));
+    material h_materials[] = {
+        h_material_ground,
+        h_material_center,
+        h_material_left,
+        h_material_right
+    };
+    int num_materials = sizeof(h_materials) / sizeof(h_materials[0]);
+
+    int num_spheres = 4;
     sphere *h_spheres = new sphere[num_spheres];
-    h_spheres[0] = sphere(point3(0,0,-1), 0.5f);
-    h_spheres[1] = sphere(point3(0,-100.5f,-1), 100);
+    h_spheres[0] = sphere(point3(0.0f, -100.5f, -1.0f) , 100.0f,&h_material_ground);
+    h_spheres[1] = sphere(point3(0.0f, 0.0f, -1.2f)    , 0.5f,  &h_material_center);
+    h_spheres[2] = sphere(point3(-1.0f, 0.0f, -1.0f)   , 0.5f,  &h_material_left);
+    h_spheres[3] = sphere(point3(1.0f, 0.0f, -1.0f)    , 0.5f,  &h_material_right);
 
     world *h_world = new world(h_spheres,num_spheres);
 
     // device allocations and transfers
+    material *d_materials;
+    CUDA_SAFE_CALL(cudaMalloc(&d_materials,num_materials*sizeof(material)));
+    CUDA_SAFE_CALL(cudaMemcpy(d_materials,h_materials,num_materials*sizeof(material),cudaMemcpyHostToDevice));
+
     sphere *d_spheres;
-    cudaMalloc(&d_spheres, num_spheres*sizeof(sphere));
-    cudaMemcpy(d_spheres,h_spheres,num_spheres*sizeof(sphere),cudaMemcpyHostToDevice);
+    CUDA_SAFE_CALL(cudaMalloc(&d_spheres, num_spheres*sizeof(sphere)));
+    CUDA_SAFE_CALL(cudaMemcpy(d_spheres,h_spheres,num_spheres*sizeof(sphere),cudaMemcpyHostToDevice));
 
     world *d_world;
-    cudaMalloc(&d_world,sizeof(world));
-    cudaMemcpy(d_world,h_world,sizeof(world),cudaMemcpyHostToDevice);
+    CUDA_SAFE_CALL(cudaMalloc(&d_world,sizeof(world)));
+    CUDA_SAFE_CALL(cudaMemcpy(d_world,h_world,sizeof(world),cudaMemcpyHostToDevice));
 
-    // update needed since the host pointer to spheres will be invalid
+    // update world and material pointers since host pointers are invalid after transfer
     // after transferring to device
     update_world_pointer<<<1,1>>>(d_world, d_spheres);
+    update_material_pointers<<<1,1>>>(d_spheres, d_materials, num_spheres);
     CUDA_SAFE_CALL(cudaGetLastError());
     CUDA_SAFE_CALL(cudaDeviceSynchronize());
     /* end world creation*/

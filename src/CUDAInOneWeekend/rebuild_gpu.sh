@@ -1,9 +1,12 @@
 #!/usr/bin/bash
 
-nvcc /usr4/ugrad/jilin/ec527/super-raytrace/src/CUDAInOneWeekend/main.cu \
-    -o /usr4/ugrad/jilin/ec527/super-raytrace/src/CUDAInOneWeekend/cuda-raytrace \
-    -g -G
+nvcc ./main.cu \
+    -o ./cuda-raytrace \
+    -g -G \
+    -Wno-deprecated-gpu-targets
 
-nvprof  --metrics inst_fp_32,inst_fp_64 \
-        --trace gpu\
-        ./cuda-raytrace > image.ppm
+./cuda-raytrace > ./image.ppm
+
+#nvprof  --metrics inst_fp_32,inst_fp_64 \
+#        --trace gpu\
+#        ./cuda-raytrace > image.ppm

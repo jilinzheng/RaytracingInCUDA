@@ -3,6 +3,8 @@
 
 #include "vec3.h"
 #include "interval.h"
+#include "material.h"
+#include "color.h"
 
 
 class camera {
@@ -47,33 +49,53 @@ class camera {
   };
 
 
-__device__ color ray_color(const ray& r, int depth, const world& world,
+__device__ color ray_color(const ray& r, int max_depth, const world& world,
     curandState *thread_rand_state) {
     // for loop instead of recursion;
     // GPU freaks out when using curandState with recursion
+    // something related to not being able to detect stack size...
     ray curr_ray = r;
     // NOTE: before adding cur_attenuation, no hits for some reason...
-    // REASON: background would overwrite without the halved attenuations!
-    float cur_attenuation = 1.0f;
-    for (int i = 0; i < depth; ++i) {
+    // REASON: background would overwrite without halved attenuations!
+    // attenuation = reflection, absorption, scattering, spreading
+    color curr_attenuation = color(1.0f,1.0f,1.0f);
+    for (int i = 0; i < max_depth; ++i) {
         // track hits
         hit_record rec;
-        if (hit_world(world,curr_ray,interval(0.001f,infinity),rec)) {
-            vec3 direction = rec.normal + random_unit_vector(thread_rand_state);
-            cur_attenuation *= 0.5f;
-            curr_ray = ray(rec.p, direction);
+        if (hit_world(world, curr_ray, interval(0.001f,infinity), rec)) {
+            ray scattered;
+            color attenuation;
+            switch (rec.mat->type) {
+                case MaterialType::LAMBERTIAN: {
+                    if (lambertian_scatter(r,rec,attenuation,scattered,thread_rand_state)) {
+                        curr_attenuation = curr_attenuation * attenuation;
+                        curr_ray = scattered;
+                    }
+                    else return color(0.0,0.0,0.0);
+                }
+                case MaterialType::METAL: {
+                    if (metal_scatter(r,rec,attenuation,scattered)) {
+                        curr_attenuation = curr_attenuation * attenuation;
+                        curr_ray = scattered;
+                    }
+                    else return color(0.0,0.0,0.0);
+                }
+            }
+            // vec3 direction = rec.normal + random_unit_vector(thread_rand_state);
+            // cur_attenuation *= 0.9f;    // NOTE: control attenuation
+            // curr_ray = ray(rec.p, direction);
         }
         // blue-to-white gradient background
         else {
             vec3 unit_direction = unit_vector(r.direction());
-            float a = 0.5f*(unit_direction.y() + 1.0f);
-            // return (1.0f-a)*color(1.0f, 1.0f, 1.0f) + a*color(0.5f, 0.7f, 1.0f);
-            return cur_attenuation*((1.0f-a)*color(1.0f, 1.0f, 1.0f) + a*color(0.5f, 0.7f, 1.0f));
+            float a = 0.5f * (unit_direction.y() + 1.0f);
+            return curr_attenuation*((1.0f-a)*color(1.0f,1.0f,1.0f)+a*color(0.5f,0.7f,1.0f));
         }
     }
     // max depth reached
     return color(0,0,0);
 
+    /* recursive implementation
     // // maximum recursion depth reached, return a black pixel
     // if (depth <= 0) return color(0,0,0);
 
@@ -90,6 +112,7 @@ __device__ color ray_color(const ray& r, int depth, const world& world,
     // vec3 unit_direction = unit_vector(r.direction());
     // float a = 0.5f*(unit_direction.y() + 1.0f);
     // return (1.0f-a)*color(1.0f, 1.0f, 1.0f) + a*color(0.5f, 0.7f, 1.0f);
+    */
 }
 
 __global__ void render(vec3 *pixel_buffer, camera cam, world *d_world, curandState *rand_state) {
@@ -105,7 +128,7 @@ __global__ void render(vec3 *pixel_buffer, camera cam, world *d_world, curandSta
     for (sample = 0; sample < samples_per_pixel; ++sample) {
         // construct a ray originating from camera center,
         // directed at a randomly sampled point (in a square)
-        // around the pixel location i,j
+        // around the pixel location i,j; NOTE: this is get_ray(i,j)
         vec3 offset = vec3(curand_uniform(&thread_rand_state) - 0.5f,
                            curand_uniform(&thread_rand_state) - 0.5f,
                            0);

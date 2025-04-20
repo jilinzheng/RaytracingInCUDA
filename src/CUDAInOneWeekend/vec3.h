@@ -2,6 +2,7 @@
 #define VEC3_H
 
 #include "curand_kernel.h"
+#include <cmath>
 
 
 class vec3 {
@@ -45,19 +46,19 @@ class vec3 {
         return e[0]*e[0] + e[1]*e[1] + e[2]*e[2];
     }
 
-    __host__ __device__ bool near_zero() const {
+    __device__ bool near_zero() const {
         // Return true if the vector is close to zero in all dimensions.
-        auto s = 1e-8;
+        float s = 1e-6f;
         return (std::fabs(e[0]) < s) && (std::fabs(e[1]) < s) && (std::fabs(e[2]) < s);
     }
 
-    __host__ __device__ static vec3 random() {
-        return vec3(random_float(), random_float(), random_float());
-    }
+    // __host__ __device__ static vec3 random() {
+    //     return vec3(random_float(), random_float(), random_float());
+    // }
 
-    __host__ __device__ static vec3 random(float min, float max) {
-        return vec3(random_float(min,max), random_float(min,max), random_float(min,max));
-    }
+    // __host__ __device__ static vec3 random(float min, float max) {
+    //     return vec3(random_float(min,max), random_float(min,max), random_float(min,max));
+    // }
 };
 
 // point3 is just an alias for vec3, but useful for geometric clarity in the code.
@@ -134,11 +135,11 @@ __device__ inline vec3 random_unit_vector(curandState *rand_state) {
 //         return -on_unit_sphere;
 // }
 
-__host__ __device__ inline vec3 reflect(const vec3& v, const vec3& n) {
+__device__ inline vec3 reflect(const vec3& v, const vec3& n) {
     return v - 2*dot(v,n)*n;
 }
 
-__host__ __device__ inline vec3 refract(const vec3& uv, const vec3& n, float etai_over_etat) {
+__device__ inline vec3 refract(const vec3& uv, const vec3& n, float etai_over_etat) {
     // auto cos_theta = std::fmin(dot(-uv, n), 1.0);
     float cos_theta = fmin(dot(-uv, n), 1.0f);
     vec3 r_out_perp =  etai_over_etat * (uv + cos_theta*n);
