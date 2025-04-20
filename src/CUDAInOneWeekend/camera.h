@@ -71,7 +71,7 @@ __device__ color ray_color(const ray& r, int max_depth, const world& world,
                     else return color(0.0,0.0,0.0);
                 }
                 case MaterialType::METAL: {
-                    if (metal_scatter(r,rec,attenuation,scattered)) {
+                    if (metal_scatter(r,rec,attenuation,scattered,thread_rand_state)) {
                         curr_attenuation = curr_attenuation * attenuation;
                         curr_ray = scattered;
                         break;
@@ -89,25 +89,6 @@ __device__ color ray_color(const ray& r, int max_depth, const world& world,
     }
     // max depth reached
     return color(0,0,0);
-
-    /* recursive implementation
-    // // maximum recursion depth reached, return a black pixel
-    // if (depth <= 0) return color(0,0,0);
-
-    // // track the hits for this particular ray
-    // hit_record rec;
-
-    // // hits will be the sphere's surface normal
-    // if (hit_world(world, r, interval(0.001f, infinity), rec)) {
-    //     vec3 direction = rec.normal + random_unit_vector(*thread_rand_state);
-    //     return 0.5f * ray_color(ray(rec.p, direction), depth-1, world, thread_rand_state);
-    // }
-
-    // // background blue-to-white gradient
-    // vec3 unit_direction = unit_vector(r.direction());
-    // float a = 0.5f*(unit_direction.y() + 1.0f);
-    // return (1.0f-a)*color(1.0f, 1.0f, 1.0f) + a*color(0.5f, 0.7f, 1.0f);
-    */
 }
 
 __global__ void render(vec3 *pixel_buffer, camera cam, world *d_world, curandState *rand_state) {

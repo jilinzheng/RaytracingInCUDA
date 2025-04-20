@@ -71,8 +71,8 @@ int main() {
     // host allocations and initializations
     material h_material_ground = material(MaterialType::LAMBERTIAN, color(0.8f,0.8f,0.0f));
     material h_material_center = material(MaterialType::LAMBERTIAN, color(0.1f,0.2f,0.5f));
-    material h_material_left = material(MaterialType::METAL, color(0.8f,0.8f,0.8f));
-    material h_material_right = material(MaterialType::METAL, color(0.8f,0.6f,0.2f));
+    material h_material_left = material(MaterialType::METAL, color(0.8f,0.8f,0.8f), 0.3f);
+    material h_material_right = material(MaterialType::METAL, color(0.8f,0.6f,0.2f), 1.0f);
     material h_materials[] = {
         h_material_ground,
         h_material_center,

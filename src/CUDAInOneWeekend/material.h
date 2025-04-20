@@ -15,8 +15,12 @@ enum class MaterialType {
 struct material {
     MaterialType type;
     color albedo;
+    float fuzz = 0.0f;
 
-    __host__ __device__ material(MaterialType t, color a) : type(t), albedo(a) {}
+    __host__ __device__ material(MaterialType type, color albedo)
+        : type(type), albedo(albedo) {}
+    __host__ __device__ material(MaterialType t, color a, float f)
+        : type(t), albedo(a), fuzz(fuzz) {}
 };
 
 
@@ -34,11 +38,12 @@ __device__ bool lambertian_scatter(const ray& r_in, const hit_record& rec,
 }
 
 __device__ bool metal_scatter(const ray& r_in, const hit_record& rec,
-    color& attenuation, ray& scattered) {
+    color& attenuation, ray& scattered, curandState *thread_rand_state) {
     vec3 reflected = reflect(r_in.direction(), rec.normal);
+    reflected = unit_vector(reflected)+(rec.mat->fuzz*random_unit_vector(thread_rand_state));
     scattered = ray(rec.p, reflected);
     attenuation = rec.mat->albedo;
-    return true;
+    return (dot(scattered.direction(), rec.normal) > 0);
 }
 
 
