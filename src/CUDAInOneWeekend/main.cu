@@ -56,7 +56,8 @@ int main() {
 
 
     // buffer to store device-calculated pixels, to later be printed on host;
-    // using Unified Memory, i.e., accessible by both host and device
+    // using Unified Memory, i.e., managed system accessible by both host and device
+    // underlying implementation goes onto device global memory
     vec3 *pixel_buffer;
     CUDA_SAFE_CALL(cudaMallocManaged((void **)&pixel_buffer, num_pixels*sizeof(vec3)));
 
@@ -72,11 +73,13 @@ int main() {
     // NOTE: materials are on the stack, spheres and world is on the heap
     // much less materials than spheres and world at the moment
     // in theory spheres and world could be much greater and not fit on the stack
-    material h_material_ground = material(MaterialType::LAMBERTIAN, color(0.8f,0.8f,0.0f));
-    material h_material_center = material(MaterialType::LAMBERTIAN, color(0.1f,0.2f,0.5f));
-    material h_material_left = material(MaterialType::DIELETRIC, 1.50f);
-    material h_material_bubble = material(MaterialType::DIELETRIC, 1.00f/1.50f);
-    material h_material_right = material(MaterialType::METAL, color(0.8f,0.6f,0.2f), 0.0f);
+    int num_materials = 5;
+    material h_material_ground  = material(MaterialType::LAMBERTIAN, color(0.8f,0.8f,0.0f));
+    material h_material_center  = material(MaterialType::LAMBERTIAN, color(0.1f,0.2f,0.5f));
+    material h_material_left    = material(MaterialType::DIELETRIC, 1.50f);
+    material h_material_bubble  = material(MaterialType::DIELETRIC, 1.00f/1.50f);
+    material h_material_right   = material(MaterialType::METAL, color(0.8f,0.6f,0.2f), 0.0f);
+    // copy into array for convenient transfer to device
     material h_materials[] = {
         h_material_ground,
         h_material_center,
@@ -84,14 +87,14 @@ int main() {
         h_material_bubble,
         h_material_right
     };
-    int num_materials = sizeof(h_materials) / sizeof(h_materials[0]);
+    // int num_materials = sizeof(h_materials) / sizeof(h_materials[0]);
 
     int num_spheres = 5;
     sphere *h_spheres = new sphere[num_spheres];
     h_spheres[0] = sphere(point3( 0.0f, -100.5f, -1.0f), 100.0f, &h_material_ground);
     h_spheres[1] = sphere(point3( 0.0f,    0.0f, -1.2f),   0.5f, &h_material_center);
     h_spheres[2] = sphere(point3(-1.0f,    0.0f, -1.0f),   0.5f, &h_material_left);
-    h_spheres[3] = sphere(point3(-1.0f,    0.0f, -1.0f),   0.4f, &h_material_left);
+    h_spheres[3] = sphere(point3(-1.0f,    0.0f, -1.0f),   0.4f, &h_material_bubble);
     h_spheres[4] = sphere(point3( 1.0f,    0.0f, -1.0f),   0.5f, &h_material_right);
 
     world *h_world = new world(h_spheres,num_spheres);
@@ -99,15 +102,18 @@ int main() {
     // device allocations and transfers
     material *d_materials;
     CUDA_SAFE_CALL(cudaMalloc(&d_materials,num_materials*sizeof(material)));
-    CUDA_SAFE_CALL(cudaMemcpy(d_materials,h_materials,num_materials*sizeof(material),cudaMemcpyHostToDevice));
+    CUDA_SAFE_CALL(cudaMemcpy(d_materials,h_materials,num_materials*sizeof(material),
+        cudaMemcpyHostToDevice));
 
     sphere *d_spheres;
     CUDA_SAFE_CALL(cudaMalloc(&d_spheres, num_spheres*sizeof(sphere)));
-    CUDA_SAFE_CALL(cudaMemcpy(d_spheres,h_spheres,num_spheres*sizeof(sphere),cudaMemcpyHostToDevice));
+    CUDA_SAFE_CALL(cudaMemcpy(d_spheres,h_spheres,num_spheres*sizeof(sphere),
+        cudaMemcpyHostToDevice));
 
     world *d_world;
     CUDA_SAFE_CALL(cudaMalloc(&d_world,sizeof(world)));
-    CUDA_SAFE_CALL(cudaMemcpy(d_world,h_world,sizeof(world),cudaMemcpyHostToDevice));
+    CUDA_SAFE_CALL(cudaMemcpy(d_world,h_world,sizeof(world),
+        cudaMemcpyHostToDevice));
 
     // update world and material pointers since host pointers are invalid after transfer
     // after transferring to device
@@ -144,8 +150,12 @@ int main() {
         }
     }
 
-    // cudaFree and delete everything
+    // cudaFree and delete heap allocations
     CUDA_SAFE_CALL(cudaFree(pixel_buffer));
+    CUDA_SAFE_CALL(cudaFree(d_materials));
+    CUDA_SAFE_CALL(cudaFree(d_spheres));
+    CUDA_SAFE_CALL(cudaFree(d_world));
+    CUDA_SAFE_CALL(cudaFree(d_rand_state));
     delete h_spheres;
     delete h_world;
 
