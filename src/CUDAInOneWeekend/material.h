@@ -6,6 +6,7 @@
 #include "color.h"
 
 
+// material type identifier
 enum class MaterialType {
     LAMBERTIAN,
     METAL,
@@ -31,6 +32,7 @@ struct material {
 };
 
 
+// material-specific scattering functions
 __device__ bool lambertian_scatter(const ray& r_in, const hit_record& rec,
     color& attenuation, ray& scattered, curandState *thread_rand_state) {
     // choose lambertian diffuse reflectance to always scatter

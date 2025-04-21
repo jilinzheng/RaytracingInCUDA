@@ -50,14 +50,6 @@ class vec3 {
         float s = 1e-6f;
         return (fabsf(e[0]) < s) && (fabsf(e[1]) < s) && (fabsf(e[2]) < s);
     }
-
-    static vec3 random() {
-        return vec3(random_float(), random_float(), random_float());
-    }
-
-    static vec3 random(float min, float max) {
-        return vec3(random_float(min,max), random_float(min,max), random_float(min,max));
-    }
 };
 
 // point3 is just an alias for vec3, but useful for geometric clarity in the code.
@@ -122,7 +114,7 @@ __device__ inline vec3 random_unit_vector(curandState *rand_state) {
         vec3 p(x, y, z);
         float lensq = dot(p, p);
         if (1e-8f < lensq && lensq <= 1.0f) // using a smaller epsilon for float
-            return p / sqrtf(lensq);        // use sqrtf for float
+            return p / sqrtf(lensq);
     }
 }
 
