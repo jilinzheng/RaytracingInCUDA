@@ -6,7 +6,7 @@ nvcc ./main.cu \
     -gencode arch=compute_86,code=sm_86
     # -g -G \
 
-time ./cuda-raytrace > ./image.ppm
+time ./cuda-raytrace > ./cuda_image.ppm
 
 # nvprof  --metrics inst_fp_32,inst_fp_64 \
 #        --trace gpu\
