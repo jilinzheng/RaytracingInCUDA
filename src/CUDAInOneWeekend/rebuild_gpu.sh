@@ -7,6 +7,8 @@ nvcc ./main.cu \
 
 ./cuda-raytrace > ./image.ppm
 
+eog ./image.ppm
+
 #nvprof  --metrics inst_fp_32,inst_fp_64 \
 #        --trace gpu\
 #        ./cuda-raytrace > image.ppm

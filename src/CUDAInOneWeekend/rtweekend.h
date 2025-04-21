@@ -19,14 +19,15 @@ __host__ __device__ inline float degrees_to_radians(float degrees) {
     return degrees * pi / 180.0f;
 }
 
-__host__ __device__ inline float random_float() {
+__device__ inline float random_float(curandState *thread_rand_state) {
     // returns a random real in [0,1).
-    return std::rand() / (RAND_MAX + 1.0f);
+    // return std::rand() / (RAND_MAX + 1.0f);
+    return curand_uniform(thread_rand_state);
 }
 
-__host__ __device__ inline float random_float(float min, float max) {
+__device__ inline float random_float(float min, float max, curandState *thread_rand_state) {
     // returns a random real in [min,max).
-    return min + (max-min)*random_float();
+    return min + (max-min)*random_float(thread_rand_state);
 }
 
 // initialize random states for device (call this before generating random numbers)

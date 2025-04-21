@@ -68,7 +68,7 @@ __device__ color ray_color(const ray& r, int max_depth, const world& world,
                         curr_ray = scattered;
                         break;
                     }
-                    else return color(0.0,0.0,0.0);
+                    else return color(0.0f,0.0f,0.0f);
                 }
                 case MaterialType::METAL: {
                     if (metal_scatter(r,rec,attenuation,scattered,thread_rand_state)) {
@@ -76,7 +76,15 @@ __device__ color ray_color(const ray& r, int max_depth, const world& world,
                         curr_ray = scattered;
                         break;
                     }
-                    else return color(0.0,0.0,0.0);
+                    else return color(0.0f,0.0f,0.0f);
+                }
+                case MaterialType::DIELETRIC: {
+                    if (dieletric_scatter(r,rec,attenuation,scattered,thread_rand_state)) {
+                        curr_attenuation = curr_attenuation * attenuation;
+                        curr_ray = scattered;
+                        break;
+                    }
+                    else return color(0.0f,0.0f,0.0f);
                 }
             }
         }

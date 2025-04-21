@@ -69,24 +69,30 @@ int main() {
 
     /* world creation */
     // host allocations and initializations
+    // NOTE: materials are on the stack, spheres and world is on the heap
+    // much less materials than spheres and world at the moment
+    // in theory spheres and world could be much greater and not fit on the stack
     material h_material_ground = material(MaterialType::LAMBERTIAN, color(0.8f,0.8f,0.0f));
     material h_material_center = material(MaterialType::LAMBERTIAN, color(0.1f,0.2f,0.5f));
-    material h_material_left = material(MaterialType::METAL, color(0.8f,0.8f,0.8f), 0.3f);
-    material h_material_right = material(MaterialType::METAL, color(0.8f,0.6f,0.2f), 1.0f);
+    material h_material_left = material(MaterialType::DIELETRIC, 1.50f);
+    material h_material_bubble = material(MaterialType::DIELETRIC, 1.00f/1.50f);
+    material h_material_right = material(MaterialType::METAL, color(0.8f,0.6f,0.2f), 0.0f);
     material h_materials[] = {
         h_material_ground,
         h_material_center,
         h_material_left,
+        h_material_bubble,
         h_material_right
     };
     int num_materials = sizeof(h_materials) / sizeof(h_materials[0]);
 
-    int num_spheres = 4;
+    int num_spheres = 5;
     sphere *h_spheres = new sphere[num_spheres];
-    h_spheres[0] = sphere(point3(0.0f, -100.5f, -1.0f) , 100.0f,&h_material_ground);
-    h_spheres[1] = sphere(point3(0.0f, 0.0f, -1.2f)    , 0.5f,  &h_material_center);
-    h_spheres[2] = sphere(point3(-1.0f, 0.0f, -1.0f)   , 0.5f,  &h_material_left);
-    h_spheres[3] = sphere(point3(1.0f, 0.0f, -1.0f)    , 0.5f,  &h_material_right);
+    h_spheres[0] = sphere(point3( 0.0f, -100.5f, -1.0f), 100.0f, &h_material_ground);
+    h_spheres[1] = sphere(point3( 0.0f,    0.0f, -1.2f),   0.5f, &h_material_center);
+    h_spheres[2] = sphere(point3(-1.0f,    0.0f, -1.0f),   0.5f, &h_material_left);
+    h_spheres[3] = sphere(point3(-1.0f,    0.0f, -1.0f),   0.4f, &h_material_left);
+    h_spheres[4] = sphere(point3( 1.0f,    0.0f, -1.0f),   0.5f, &h_material_right);
 
     world *h_world = new world(h_spheres,num_spheres);
 

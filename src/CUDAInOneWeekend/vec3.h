@@ -2,7 +2,6 @@
 #define VEC3_H
 
 #include "curand_kernel.h"
-#include <cmath>
 
 
 class vec3 {
@@ -39,7 +38,7 @@ class vec3 {
     }
 
     __host__ __device__ float length() const {
-        return std::sqrt(length_squared());
+        return sqrtf(length_squared());
     }
 
     __host__ __device__ float length_squared() const {
@@ -49,7 +48,7 @@ class vec3 {
     __device__ bool near_zero() const {
         // Return true if the vector is close to zero in all dimensions.
         float s = 1e-6f;
-        return (std::fabs(e[0]) < s) && (std::fabs(e[1]) < s) && (std::fabs(e[2]) < s);
+        return (fabsf(e[0]) < s) && (fabsf(e[1]) < s) && (fabsf(e[2]) < s);
     }
 
     // __host__ __device__ static vec3 random() {
@@ -140,10 +139,11 @@ __device__ inline vec3 reflect(const vec3& v, const vec3& n) {
 }
 
 __device__ inline vec3 refract(const vec3& uv, const vec3& n, float etai_over_etat) {
-    // auto cos_theta = std::fmin(dot(-uv, n), 1.0);
-    float cos_theta = fmin(dot(-uv, n), 1.0f);
-    vec3 r_out_perp =  etai_over_etat * (uv + cos_theta*n);
-    vec3 r_out_parallel = -std::sqrt(std::fabs(1.0f - r_out_perp.length_squared())) * n;
+    // float cos_theta = std::fmin(dot(-uv, n), 1.0);
+    float cos_theta = fminf(dot(-uv, n), 1.0f);
+    vec3 r_out_perp = etai_over_etat * (uv + cos_theta*n);
+    // vec3 r_out_parallel = -std::sqrt(std::fabs(1.0f - r_out_perp.length_squared())) * n;
+    vec3 r_out_parallel = -sqrtf(fabsf(1.0f - r_out_perp.length_squared())) * n;
     return r_out_perp + r_out_parallel;
 }
 
