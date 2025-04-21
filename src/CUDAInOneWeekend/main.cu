@@ -38,20 +38,25 @@ int main() {
     // these dimensions match the CUDA reference
     // int img_width = 1280, img_height = 600;
     // these dimensions match serial cpu baseline/reference
-    int img_width = 640, img_height = 360;
+    // int img_width = 640, img_height = 360;
+    int img_width = 712, img_height = 400; // chapter 12
     // both are divisible by warp size (32) and threads per row (8)
 
     // total pixels
     int num_pixels = img_width*img_height;
-
     // samples to take around a pixel for antialiasing
     int samples_per_pixel = 100;
-
     // maximum recursion depth (implemented with for-loop)
     int max_depth = 50;
 
-    // initialize the camera
-    camera cam(img_width,img_height,samples_per_pixel,max_depth);
+    // positonable camera
+    float vfov = 20;
+    point3 lookfrom = point3(-2,2,1), lookat = point3(0,0,-1);
+    vec3 vup = vec3(0,1,0);
+
+    // initialize the camera given the above parameters
+    camera cam(img_width,img_height,samples_per_pixel,max_depth,
+        vfov,lookfrom,lookat,vup);
     /* end image/camera configuration*/
 
 
@@ -73,12 +78,13 @@ int main() {
     // NOTE: materials are on the stack, spheres and world is on the heap
     // much less materials than spheres and world at the moment
     // in theory spheres and world could be much greater and not fit on the stack
+    // /* world up to chapter 11
     int num_materials = 5;
     material h_material_ground  = material(MaterialType::LAMBERTIAN, color(0.8f,0.8f,0.0f));
     material h_material_center  = material(MaterialType::LAMBERTIAN, color(0.1f,0.2f,0.5f));
     material h_material_left    = material(MaterialType::DIELETRIC, 1.50f);
     material h_material_bubble  = material(MaterialType::DIELETRIC, 1.00f/1.50f);
-    material h_material_right   = material(MaterialType::METAL, color(0.8f,0.6f,0.2f), 0.0f);
+    material h_material_right   = material(MaterialType::METAL, color(0.8f,0.6f,0.2f), 1.0f);
     // copy into array for convenient transfer to device
     material h_materials[] = {
         h_material_ground,
@@ -98,6 +104,26 @@ int main() {
     h_spheres[4] = sphere(point3( 1.0f,    0.0f, -1.0f),   0.5f, &h_material_right);
 
     world *h_world = new world(h_spheres,num_spheres);
+    // */
+
+    /* chapter 12.1 world
+    int num_materials = 2;
+    material h_material_left    = material(MaterialType::LAMBERTIAN, color(0,0,1));
+    material h_material_right   = material(MaterialType::LAMBERTIAN, color(1,0,0));
+    // copy into array for convenient transfer to device
+    material h_materials[] = {
+        h_material_left,
+        h_material_right
+    };
+
+    int num_spheres = 2;
+    sphere *h_spheres = new sphere[num_spheres];
+    float R = std::cos(pi/4);
+    h_spheres[0] = sphere(point3(-R,0,-1), R, &h_material_left);
+    h_spheres[1] = sphere(point3( R,0,-1), R, &h_material_right);
+
+    world *h_world = new world(h_spheres,num_spheres);
+    */
 
     // device allocations and transfers
     material *d_materials;

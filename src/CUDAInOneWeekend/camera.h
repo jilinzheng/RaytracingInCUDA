@@ -19,32 +19,51 @@ class camera {
         vec3    pixel_delta_u;          // offset to pixel to the right
         vec3    pixel_delta_v;          // offset to pixel below
 
-        camera(int img_width, int img_height, int samples_per_pixel, int max_depth) :
+        float   vfov     = 90;              // vertical view angel (field of view)
+        point3  lookfrom = point3(0,0,0);   // point camera is looking from
+        point3  lookat   = point3(0,0,0);   // point camera is looking from
+        vec3    vup      = vec3(0,1,0);     // camera-relative "up" direction
+        vec3    u,v,w;                      // camera frame basis vectors
+
+        camera(int img_width, int img_height, int samples_per_pixel, int max_depth,
+            float vfov, point3 lookfrom, point3 lookat, vec3 vup) :
             img_width(img_width), img_height(img_height),
-            samples_per_pixel(samples_per_pixel), max_depth(max_depth) {
+            samples_per_pixel(samples_per_pixel), max_depth(max_depth),
+            vfov(vfov), lookfrom(lookfrom), lookat(lookat), vup(vup) {
                 initialize();
             }
 
         void initialize() {
-            float focal_length = 1.0f;
-            float viewport_height = 2.0f;
+            pixel_samples_scale = 1.0f / samples_per_pixel;
+
+            center = lookfrom;
+
+            // NOTE: since camera initialization is done in host, we could
+            // potentially go back to double-precision for more, well, precision
+            // but not sure how exactly it will affect the device kernels...
+            float focal_length = (lookfrom - lookat).length();
+            float theta = degrees_to_radians(vfov);
+            float h = std::tan(theta/2);
+            float viewport_height = 2.0f * h * focal_length;
             float viewport_width = viewport_height * (float(img_width)/img_height);
-            center = point3(0, 0, 0);
+
+            // calculate u,v,w unit basis vectors for camera coordinate frame
+            w = unit_vector(lookfrom-lookat);
+            u = unit_vector(cross(vup,w));
+            v = cross(w,u);
 
             // calculate the vectors across the horizontal and down the vertical viewport edges
-            vec3 viewport_u = vec3(viewport_width, 0, 0);
-            vec3 viewport_v = vec3(0, -viewport_height, 0);
+            vec3 viewport_u = viewport_width * u;
+            vec3 viewport_v = viewport_height * -v;
 
             // calculate the horizontal and vertical delta vectors from pixel to pixel
             pixel_delta_u = viewport_u / img_width;
             pixel_delta_v = viewport_v / img_height;
 
             // calculate the location of the upper left pixel
-            vec3 viewport_upper_left = center - vec3(0, 0, focal_length)
+            vec3 viewport_upper_left = center - (focal_length * w)
                                         - viewport_u/2 - viewport_v/2;
             pixel00_loc = viewport_upper_left + 0.5f * (pixel_delta_u + pixel_delta_v);
-
-            pixel_samples_scale = 1.0f / samples_per_pixel;
         }
   };
 
