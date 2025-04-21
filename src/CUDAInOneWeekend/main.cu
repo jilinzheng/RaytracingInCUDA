@@ -35,31 +35,44 @@ int main() {
     CUDA_SAFE_CALL(cudaSetDevice(0));
 
     /* image/camera configuration */
-    // these dimensions match the CUDA reference
-    // int img_width = 1280, img_height = 600;
-    // these dimensions match serial cpu baseline/reference
-    // int img_width = 640, img_height = 360;
-    int img_width = 712, img_height = 400; // chapter 12
-    // both are divisible by warp size (32) and threads per row (8)
+    camera cam;
 
-    // total pixels
-    int num_pixels = img_width*img_height;
+    // dimensions set to be divisible by warp size (32) and threads per row (8)
+    // these dimensions match the CUDA reference
+    // cam.img_width    = 1280;
+    // cam.img_height   = 600;
+
+    // these dimensions match serial cpu baseline/reference
+    // cam.img_width    = 640;
+    // cam.img_height   = 360;
+
+    // chapter 12
+    cam.img_width   = 712;
+    cam.img_height  = 400;
+
     // samples to take around a pixel for antialiasing
-    int samples_per_pixel = 100;
+    cam.samples_per_pixel = 100;
+
     // maximum recursion depth (implemented with for-loop)
-    int max_depth = 50;
+    cam.max_depth = 50;
 
     // positonable camera
-    float vfov = 20;
-    point3 lookfrom = point3(-2,2,1), lookat = point3(0,0,-1);
-    vec3 vup = vec3(0,1,0);
+    cam.vfov        = 20;
+    cam.lookfrom    = point3(-2,2,1);
+    cam.lookat      = point3(0,0,-1);
+    cam.vup         = vec3(0,1,0);
+
+    // defocus blur
+    cam.defocus_angle = 10.0;
+    cam.focus_dist = 3.4;
 
     // initialize the camera given the above parameters
-    camera cam(img_width,img_height,samples_per_pixel,max_depth,
-        vfov,lookfrom,lookat,vup);
+    cam.initialize();
     /* end image/camera configuration*/
 
 
+    // total pixels
+    int num_pixels = cam.img_width * cam.img_height;
     // buffer to store device-calculated pixels, to later be printed on host;
     // using Unified Memory, i.e., managed system accessible by both host and device
     // underlying implementation goes onto device global memory
@@ -68,8 +81,8 @@ int main() {
 
     // square blocks to start
     int num_threads_per_block_row = 8;
-    dim3 dimGrid(img_width/num_threads_per_block_row,
-        img_height/num_threads_per_block_row);
+    dim3 dimGrid(cam.img_width/num_threads_per_block_row,
+        cam.img_height/num_threads_per_block_row);
     dim3 dimBlock(num_threads_per_block_row,num_threads_per_block_row);
 
 
@@ -153,7 +166,7 @@ int main() {
     // setup random number generation in device
     curandState *d_rand_state;
     CUDA_SAFE_CALL(cudaMalloc((void **)&d_rand_state, num_pixels*sizeof(curandState)));
-    init_rng<<<dimGrid, dimBlock>>>(img_width, img_height, d_rand_state);
+    init_rng<<<dimGrid, dimBlock>>>(cam.img_width, cam.img_height, d_rand_state);
     CUDA_SAFE_CALL(cudaGetLastError());
     CUDA_SAFE_CALL(cudaDeviceSynchronize());
 
@@ -164,10 +177,10 @@ int main() {
 
     // output pixel_buffer as a .ppm image
     const interval intensity(0.000f,0.999f);
-    std::cout << "P3\n" << img_width << " " << img_height << "\n255\n";
-    for (int j = 0; j < img_height; ++j) {      // rows
-        for (int i = 0; i < img_width; ++i) {   // cols
-            size_t pixel_index = j * img_width + i;
+    std::cout << "P3\n" << cam.img_width << " " << cam.img_height << "\n255\n";
+    for (int j = 0; j < cam.img_height; ++j) {      // rows
+        for (int i = 0; i < cam.img_width; ++i) {   // cols
+            size_t pixel_index = j * cam.img_width + i;
             vec3 pixel = pixel_buffer[pixel_index];
             int r = int(256 * intensity.clamp(pixel.x()));
             int g = int(256 * intensity.clamp(pixel.y()));
@@ -176,7 +189,7 @@ int main() {
         }
     }
 
-    // cudaFree and delete heap allocations
+    // cudaFree device allocations, delete host heap allocations
     CUDA_SAFE_CALL(cudaFree(pixel_buffer));
     CUDA_SAFE_CALL(cudaFree(d_materials));
     CUDA_SAFE_CALL(cudaFree(d_spheres));

@@ -72,7 +72,7 @@ __device__ bool dieletric_scatter(const ray& r_in, const hit_record& rec,
     float r0 = (1.0f-refraction_index) / (1.0f+refraction_index);
     r0 = r0*r0;
     r0 = r0 + (1.0f - r0) * powf((1.0f - cos_theta), 5);
-    if (cannot_refract || r0 > random_float(thread_rand_state))
+    if (cannot_refract || r0 > device_random_float(thread_rand_state))
         direction = reflect(unit_direction, rec.normal);
     else direction = refract(unit_direction, rec.normal, ri);
 

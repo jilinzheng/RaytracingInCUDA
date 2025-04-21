@@ -51,20 +51,20 @@ class vec3 {
         return (fabsf(e[0]) < s) && (fabsf(e[1]) < s) && (fabsf(e[2]) < s);
     }
 
-    // __host__ __device__ static vec3 random() {
-    //     return vec3(random_float(), random_float(), random_float());
-    // }
+    static vec3 random() {
+        return vec3(random_float(), random_float(), random_float());
+    }
 
-    // __host__ __device__ static vec3 random(float min, float max) {
-    //     return vec3(random_float(min,max), random_float(min,max), random_float(min,max));
-    // }
+    static vec3 random(float min, float max) {
+        return vec3(random_float(min,max), random_float(min,max), random_float(min,max));
+    }
 };
 
 // point3 is just an alias for vec3, but useful for geometric clarity in the code.
 using point3 = vec3;
 
 
-// Vector Utility Functions
+// vector utility functions
 
 __host__ __device__ inline vec3 operator+(const vec3& u, const vec3& v) {
     return vec3(u.e[0] + v.e[0], u.e[1] + v.e[1], u.e[2] + v.e[2]);
@@ -106,13 +106,13 @@ __host__ __device__ inline vec3 unit_vector(const vec3& v) {
     return v / v.length();
 }
 
-// __host__ __device__ inline vec3 random_in_unit_disk() {
-//     while (true) {
-//         auto p = vec3(random_float(-1,1), random_float(-1,1), 0);
-//         if (p.length_squared() < 1)
-//             return p;
-//     }
-// }
+__device__ inline vec3 random_in_unit_disk(curandState *rand_state) {
+    while (true) {
+        vec3 p = vec3(device_random_float(-1,1,rand_state), device_random_float(-1,1,rand_state), 0);
+        if (p.length_squared() < 1)
+            return p;
+    }
+}
 
 __device__ inline vec3 random_unit_vector(curandState *rand_state) {
     while (true) {
@@ -126,23 +126,13 @@ __device__ inline vec3 random_unit_vector(curandState *rand_state) {
     }
 }
 
-// __host__ __device__ inline vec3 random_on_hemisphere(const vec3& normal) {
-//     vec3 on_unit_sphere = random_unit_vector();
-//     if (dot(on_unit_sphere, normal) > 0.0f) // In the same hemisphere as the normal
-//         return on_unit_sphere;
-//     else
-//         return -on_unit_sphere;
-// }
-
 __device__ inline vec3 reflect(const vec3& v, const vec3& n) {
     return v - 2*dot(v,n)*n;
 }
 
 __device__ inline vec3 refract(const vec3& uv, const vec3& n, float etai_over_etat) {
-    // float cos_theta = std::fmin(dot(-uv, n), 1.0);
     float cos_theta = fminf(dot(-uv, n), 1.0f);
     vec3 r_out_perp = etai_over_etat * (uv + cos_theta*n);
-    // vec3 r_out_parallel = -std::sqrt(std::fabs(1.0f - r_out_perp.length_squared())) * n;
     vec3 r_out_parallel = -sqrtf(fabsf(1.0f - r_out_perp.length_squared())) * n;
     return r_out_perp + r_out_parallel;
 }

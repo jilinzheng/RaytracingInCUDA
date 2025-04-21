@@ -7,66 +7,73 @@
 #include "color.h"
 
 
-class camera {
-    public:
-        int     img_width;              // rendered image width in pixel count
-        int     img_height;             // rendered image height
-        int     samples_per_pixel;      // number of random samples for each pixel
-        float   pixel_samples_scale;    // color scale factor for sum of pixel samples
-        int     max_depth;              // maximum recursion depth for ray bounces
-        point3  center;                 // camera center
-        point3  pixel00_loc;            // location of pixel 0, 0
-        vec3    pixel_delta_u;          // offset to pixel to the right
-        vec3    pixel_delta_v;          // offset to pixel below
+struct camera {
+    int     img_width;              // rendered image width in pixel count
+    int     img_height;             // rendered image height
+    int     samples_per_pixel;      // number of random samples for each pixel
+    float   pixel_samples_scale;    // color scale factor for sum of pixel samples
+    int     max_depth;              // maximum recursion depth for ray bounces
+    point3  center;                 // camera center
+    point3  pixel00_loc;            // location of pixel 0, 0
+    vec3    pixel_delta_u;          // offset to pixel to the right
+    vec3    pixel_delta_v;          // offset to pixel below
 
-        float   vfov     = 90;              // vertical view angel (field of view)
-        point3  lookfrom = point3(0,0,0);   // point camera is looking from
-        point3  lookat   = point3(0,0,0);   // point camera is looking from
-        vec3    vup      = vec3(0,1,0);     // camera-relative "up" direction
-        vec3    u,v,w;                      // camera frame basis vectors
+    float   vfov     = 90;              // vertical view angel (field of view)
+    point3  lookfrom = point3(0,0,0);   // point camera is looking from
+    point3  lookat   = point3(0,0,0);   // point camera is looking from
+    vec3    vup      = vec3(0,1,0);     // camera-relative "up" direction
+    vec3    u,v,w;                      // camera frame basis vectors
 
-        camera(int img_width, int img_height, int samples_per_pixel, int max_depth,
-            float vfov, point3 lookfrom, point3 lookat, vec3 vup) :
-            img_width(img_width), img_height(img_height),
-            samples_per_pixel(samples_per_pixel), max_depth(max_depth),
-            vfov(vfov), lookfrom(lookfrom), lookat(lookat), vup(vup) {
-                initialize();
-            }
+    float   defocus_angle = 0;  // variation angle of rays through each pixel
+    float   focus_dist = 10;    // distance from camera lookfrom point to plane of perfect focus
+    vec3    defocus_disk_u;     // defocus disk horizontal radius
+    vec3    defocus_disk_v;     // defocus disk vertical radius
 
-        void initialize() {
-            pixel_samples_scale = 1.0f / samples_per_pixel;
 
-            center = lookfrom;
+    void initialize() {
+        pixel_samples_scale = 1.0f / samples_per_pixel;
 
-            // NOTE: since camera initialization is done in host, we could
-            // potentially go back to double-precision for more, well, precision
-            // but not sure how exactly it will affect the device kernels...
-            float focal_length = (lookfrom - lookat).length();
-            float theta = degrees_to_radians(vfov);
-            float h = std::tan(theta/2);
-            float viewport_height = 2.0f * h * focal_length;
-            float viewport_width = viewport_height * (float(img_width)/img_height);
+        center = lookfrom;
 
-            // calculate u,v,w unit basis vectors for camera coordinate frame
-            w = unit_vector(lookfrom-lookat);
-            u = unit_vector(cross(vup,w));
-            v = cross(w,u);
+        // NOTE: since camera initialization is done in host, we could
+        // potentially go back to double-precision for more, well, precision
+        // but not sure how exactly it will affect the device kernels...
+        // float focal_length = (lookfrom - lookat).length();
+        float theta = degrees_to_radians(vfov);
+        float h = std::tan(theta/2);
+        float viewport_height = 2.0f * h * focus_dist;
+        float viewport_width = viewport_height * (float(img_width)/img_height);
 
-            // calculate the vectors across the horizontal and down the vertical viewport edges
-            vec3 viewport_u = viewport_width * u;
-            vec3 viewport_v = viewport_height * -v;
+        // calculate u,v,w unit basis vectors for camera coordinate frame
+        w = unit_vector(lookfrom-lookat);
+        u = unit_vector(cross(vup,w));
+        v = cross(w,u);
 
-            // calculate the horizontal and vertical delta vectors from pixel to pixel
-            pixel_delta_u = viewport_u / img_width;
-            pixel_delta_v = viewport_v / img_height;
+        // calculate vectors across horizontal and down vertical viewport edges
+        vec3 viewport_u = viewport_width * u;
+        vec3 viewport_v = viewport_height * -v;
 
-            // calculate the location of the upper left pixel
-            vec3 viewport_upper_left = center - (focal_length * w)
-                                        - viewport_u/2 - viewport_v/2;
-            pixel00_loc = viewport_upper_left + 0.5f * (pixel_delta_u + pixel_delta_v);
-        }
+        // calculate horizontal and vertical delta vectors from pixel to pixel
+        pixel_delta_u = viewport_u / img_width;
+        pixel_delta_v = viewport_v / img_height;
+
+        // calculate location of the upper left pixel
+        vec3 viewport_upper_left = center - (focus_dist * w) - viewport_u/2 - viewport_v/2;
+        pixel00_loc = viewport_upper_left + 0.5f * (pixel_delta_u + pixel_delta_v);
+
+        // calculate camera defocus disk basis vectors
+        float defocus_radius = focus_dist * std::tan(degrees_to_radians(defocus_angle/2));
+        defocus_disk_u = u * defocus_radius;
+        defocus_disk_v = v * defocus_radius;
+    }
+
+
   };
 
+__device__ point3 defocus_disk_sample(camera& cam,curandState *thread_rand_state) {
+    point3 p = random_in_unit_disk(thread_rand_state);
+    return cam.center + (p[0] * cam.defocus_disk_u) + (p[1] * cam.defocus_disk_v);
+}
 
 __device__ color ray_color(const ray& r, int max_depth, const world& world,
     curandState *thread_rand_state) {
@@ -138,7 +145,9 @@ __global__ void render(vec3 *pixel_buffer, camera cam, world *d_world, curandSta
         point3 pixel_sample = cam.pixel00_loc
                                + ((i + offset.x()) * cam.pixel_delta_u)
                                + ((j + offset.y()) * cam.pixel_delta_v);
-        point3 ray_origin = cam.center;
+        // point3 ray_origin = cam.center;
+        point3 ray_origin = (cam.defocus_angle<=0) ? cam.center
+                                                    : defocus_disk_sample(cam,&thread_rand_state);
         vec3 ray_direction = pixel_sample - ray_origin;
         ray r(ray_origin, ray_direction);
 
