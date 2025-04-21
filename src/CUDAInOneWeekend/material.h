@@ -20,6 +20,7 @@ struct material {
     float fuzz;
     double refraction_index;
 
+    __host__ __device__ material() {}
     // lambertian constructor
     __host__ __device__ material(MaterialType type, color albedo)
         : type(type), albedo(albedo) {}

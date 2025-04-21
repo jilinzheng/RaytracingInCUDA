@@ -37,34 +37,44 @@ int main() {
     /* image/camera configuration */
     camera cam;
 
-    // dimensions set to be divisible by warp size (32) and threads per row (8)
-    // these dimensions match the CUDA reference
+    // try to set dimensions divisible by warp size (32)
+    // and threads per row (8)
+
+    // match the CUDA reference
     // cam.img_width    = 1280;
     // cam.img_height   = 600;
 
-    // these dimensions match serial cpu baseline/reference
+    // match serial cpu baseline/reference
     // cam.img_width    = 640;
     // cam.img_height   = 360;
 
     // chapter 12
-    cam.img_width   = 712;
-    cam.img_height  = 400;
+    // cam.img_width   = 712;
+    // cam.img_height  = 400;
+
+    // chapter 14 final world
+    cam.img_width   = 1200;
+    cam.img_height  = 675;
+
+    // 720p
+    // cam.img_width   = 1280;
+    // cam.img_height  = 720;
 
     // samples to take around a pixel for antialiasing
-    cam.samples_per_pixel = 100;
+    cam.samples_per_pixel = 500;
 
     // maximum recursion depth (implemented with for-loop)
     cam.max_depth = 50;
 
     // positonable camera
     cam.vfov        = 20;
-    cam.lookfrom    = point3(-2,2,1);
-    cam.lookat      = point3(0,0,-1);
+    cam.lookfrom    = point3(13,2,3);
+    cam.lookat      = point3(0,0,0);
     cam.vup         = vec3(0,1,0);
 
     // defocus blur
-    cam.defocus_angle = 10.0;
-    cam.focus_dist = 3.4;
+    cam.defocus_angle = 0.6;
+    cam.focus_dist    = 10.0;
 
     // initialize the camera given the above parameters
     cam.initialize();
@@ -91,7 +101,7 @@ int main() {
     // NOTE: materials are on the stack, spheres and world is on the heap
     // much less materials than spheres and world at the moment
     // in theory spheres and world could be much greater and not fit on the stack
-    // /* world up to chapter 11
+    /* world up to chapter 11
     int num_materials = 5;
     material h_material_ground  = material(MaterialType::LAMBERTIAN, color(0.8f,0.8f,0.0f));
     material h_material_center  = material(MaterialType::LAMBERTIAN, color(0.1f,0.2f,0.5f));
@@ -117,7 +127,7 @@ int main() {
     h_spheres[4] = sphere(point3( 1.0f,    0.0f, -1.0f),   0.5f, &h_material_right);
 
     world *h_world = new world(h_spheres,num_spheres);
-    // */
+    */
 
     /* chapter 12.1 world
     int num_materials = 2;
@@ -137,6 +147,67 @@ int main() {
 
     world *h_world = new world(h_spheres,num_spheres);
     */
+
+    // /* chapter 14 final world
+    // 1 ground, 22*22 small spheres, 3 big spheres 
+    int num_materials = 1+22*22+3;
+    // int num_spheres = 1+22*22;
+    int num_spheres = num_materials;
+
+    material *h_materials = new material[num_materials];
+    sphere *h_spheres = new sphere[num_spheres];
+
+    // ground sphere
+    h_materials[0] = material(MaterialType::LAMBERTIAN, color(0.5f,0.5f,0.5f));
+    h_spheres[0] = sphere(point3(0,-1000,0), 1000, &h_materials[0]);
+
+    // small spheres
+    for (int a = -11; a < 11; ++a) {
+        for (int b = -11; b < 11; ++b) {
+            float choose_mat = random_float();
+            point3 center(a+0.9f*random_float(), 0.2f, b+0.9f*random_float());
+
+            if ((center - point3(4,0.2f,0)).length() > 0.9f) {
+                // scale i to start from 1 and index sequentially
+                // zero-based a * total b values + zero-based b + 1
+                // 1 is for the already-created ground sphere
+                int i = (a+11) * 22 + (b+11) + 1;
+
+                // diffuse
+                if (choose_mat < 0.8f) {
+                    color albedo    = color::random() * color::random();
+                    h_materials[i]  = material(MaterialType::LAMBERTIAN, albedo);
+                    h_spheres[i]    = sphere(center, 0.2f, &h_materials[i]);
+                }
+                // metal
+                else if (choose_mat < 0.95f) {
+                    color albedo    = color::random(0.5f,1.0f);
+                    float fuzz      = random_float(0.0f,0.5f);
+                    h_materials[i]  = material(MaterialType::METAL, albedo, fuzz);
+                    h_spheres[i]    = sphere(center, 0.2f, &h_materials[i]);
+                }
+                // glass
+                else {
+                    h_materials[i]  = material(MaterialType::DIELETRIC, 1.5f);
+                    h_spheres[i]    = sphere(center, 0.2f, &h_materials[i]);
+                }
+            }
+        }
+    }
+
+    // big spheres, start index after ground and small spheres
+    int i = 1+22*22;
+    h_materials[i] = material(MaterialType::DIELETRIC, 1.5f);
+    h_spheres[i]   = sphere(point3(0,1,0), 1.0f, &h_materials[i]);
+
+    h_materials[i+1] = material(MaterialType::LAMBERTIAN, color(0.4f,0.2f,0.1f));
+    h_spheres[i+1]   = sphere(point3(-4,1,0), 1.0f, &h_materials[i+1]);
+
+    h_materials[i+2] = material(MaterialType::METAL, color(0.7f,0.6f,0.5f), 0.0f);
+    h_spheres[i+2]   = sphere(point3(4,1,0), 1.0f, &h_materials[i+2]);
+
+    world *h_world = new world(h_spheres,num_spheres);
+    // */
 
     // device allocations and transfers
     material *d_materials;
@@ -195,7 +266,8 @@ int main() {
     CUDA_SAFE_CALL(cudaFree(d_spheres));
     CUDA_SAFE_CALL(cudaFree(d_world));
     CUDA_SAFE_CALL(cudaFree(d_rand_state));
-    delete h_spheres;
+    delete[] h_materials;
+    delete[] h_spheres;
     delete h_world;
 
     return 0;

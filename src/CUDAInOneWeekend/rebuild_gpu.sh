@@ -5,7 +5,11 @@ nvcc ./main.cu \
     -g -G \
     -Wno-deprecated-gpu-targets
 
-./cuda-raytrace > ./image.ppm
+# ./cuda-raytrace > ./image.ppm
+
+# nsys profile --output cuda_raytrace_timeline ./cuda-raytrace > image.ppm
+
+ncu --metrics inst_fp_32,inst_fp_64 --output cuda_raytrace_metrics ./cuda-raytrace > image.ppm
 
 eog ./image.ppm
 
