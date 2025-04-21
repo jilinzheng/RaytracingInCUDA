@@ -53,15 +53,16 @@ int main() {
     // cam.img_height  = 400;
 
     // chapter 14 final world
-    cam.img_width   = 1200;
-    cam.img_height  = 675;
+    // NOTE: does not fit nicely into warp size nor block dim
+    // cam.img_width   = 1200;
+    // cam.img_height  = 675;
 
     // 720p
-    // cam.img_width   = 1280;
-    // cam.img_height  = 720;
+    cam.img_width   = 1280;
+    cam.img_height  = 720;
 
     // samples to take around a pixel for antialiasing
-    cam.samples_per_pixel = 500;
+    cam.samples_per_pixel = 100;
 
     // maximum recursion depth (implemented with for-loop)
     cam.max_depth = 50;
@@ -151,7 +152,6 @@ int main() {
     // /* chapter 14 final world
     // 1 ground, 22*22 small spheres, 3 big spheres 
     int num_materials = 1+22*22+3;
-    // int num_spheres = 1+22*22;
     int num_spheres = num_materials;
 
     material *h_materials = new material[num_materials];
