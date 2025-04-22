@@ -152,7 +152,7 @@ __global__ void render(vec3 *pixel_buffer, camera cam, world *d_world, curandSta
         ray r(ray_origin, ray_direction);
 
         // accumulate the various samples' colors
-        // NOTE: multiple accumulators and/or loop unrolling here?!!!
+        // TODO: multiple accumulators and/or loop unrolling here?!!!
         // samples can be incremented by k = 2, 4, 8, etc.
         pixel_color += ray_color(r, cam.max_depth, *d_world, &thread_rand_state);
     }

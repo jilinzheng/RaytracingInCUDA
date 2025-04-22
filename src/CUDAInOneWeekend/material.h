@@ -4,6 +4,7 @@
 #include "ray.h"
 #include "hittable.h"
 #include "color.h"
+#include "rtweekend.h"
 
 
 // material type identifier
@@ -57,6 +58,13 @@ __device__ bool metal_scatter(const ray& r_in, const hit_record& rec,
     return (dot(scattered.direction(), rec.normal) > 0);
 }
 
+// Schlick's approximation for reflectance
+__device__ inline float reflectance(float cosine, float refraction_index) {
+    float r0 = (1-refraction_index)/(1+refraction_index);
+    r0 = r0*r0;
+    return r0 + (1-r0)*powf((1-cosine),5);
+}
+
 __device__ bool dieletric_scatter(const ray& r_in, const hit_record& rec,
     color& attenuation, ray& scattered, curandState *thread_rand_state) {
     attenuation = color(1.0f,1.0f,1.0f);
@@ -72,10 +80,7 @@ __device__ bool dieletric_scatter(const ray& r_in, const hit_record& rec,
     vec3 direction;
 
     // Schlick's approximation for reflectance
-    float r0 = (1.0f-refraction_index) / (1.0f+refraction_index);
-    r0 = r0*r0;
-    r0 = r0 + (1.0f - r0) * powf((1.0f - cos_theta), 5);
-    if (cannot_refract || r0 > device_random_float(thread_rand_state))
+    if (cannot_refract || reflectance(cos_theta, ri) > device_random_float(thread_rand_state))
         direction = reflect(unit_direction, rec.normal);
     else direction = refract(unit_direction, rec.normal, ri);
 

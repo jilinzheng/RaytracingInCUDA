@@ -99,57 +99,7 @@ int main() {
 
     /* world creation */
     // host allocations and initializations
-    // NOTE: materials are on the stack, spheres and world is on the heap
-    // much less materials than spheres and world at the moment
-    // in theory spheres and world could be much greater and not fit on the stack
-    /* world up to chapter 11
-    int num_materials = 5;
-    material h_material_ground  = material(MaterialType::LAMBERTIAN, color(0.8f,0.8f,0.0f));
-    material h_material_center  = material(MaterialType::LAMBERTIAN, color(0.1f,0.2f,0.5f));
-    material h_material_left    = material(MaterialType::DIELETRIC, 1.50f);
-    material h_material_bubble  = material(MaterialType::DIELETRIC, 1.00f/1.50f);
-    material h_material_right   = material(MaterialType::METAL, color(0.8f,0.6f,0.2f), 1.0f);
-    // copy into array for convenient transfer to device
-    material h_materials[] = {
-        h_material_ground,
-        h_material_center,
-        h_material_left,
-        h_material_bubble,
-        h_material_right
-    };
-    // int num_materials = sizeof(h_materials) / sizeof(h_materials[0]);
-
-    int num_spheres = 5;
-    sphere *h_spheres = new sphere[num_spheres];
-    h_spheres[0] = sphere(point3( 0.0f, -100.5f, -1.0f), 100.0f, &h_material_ground);
-    h_spheres[1] = sphere(point3( 0.0f,    0.0f, -1.2f),   0.5f, &h_material_center);
-    h_spheres[2] = sphere(point3(-1.0f,    0.0f, -1.0f),   0.5f, &h_material_left);
-    h_spheres[3] = sphere(point3(-1.0f,    0.0f, -1.0f),   0.4f, &h_material_bubble);
-    h_spheres[4] = sphere(point3( 1.0f,    0.0f, -1.0f),   0.5f, &h_material_right);
-
-    world *h_world = new world(h_spheres,num_spheres);
-    */
-
-    /* chapter 12.1 world
-    int num_materials = 2;
-    material h_material_left    = material(MaterialType::LAMBERTIAN, color(0,0,1));
-    material h_material_right   = material(MaterialType::LAMBERTIAN, color(1,0,0));
-    // copy into array for convenient transfer to device
-    material h_materials[] = {
-        h_material_left,
-        h_material_right
-    };
-
-    int num_spheres = 2;
-    sphere *h_spheres = new sphere[num_spheres];
-    float R = std::cos(pi/4);
-    h_spheres[0] = sphere(point3(-R,0,-1), R, &h_material_left);
-    h_spheres[1] = sphere(point3( R,0,-1), R, &h_material_right);
-
-    world *h_world = new world(h_spheres,num_spheres);
-    */
-
-    // /* chapter 14 final world
+    // chapter 14 final world
     // 1 ground, 22*22 small spheres, 3 big spheres 
     int num_materials = 1+22*22+3;
     int num_spheres = num_materials;
@@ -197,17 +147,17 @@ int main() {
 
     // big spheres, start index after ground and small spheres
     int i = 1+22*22;
+    // middle sphere
     h_materials[i] = material(MaterialType::DIELETRIC, 1.5f);
     h_spheres[i]   = sphere(point3(0,1,0), 1.0f, &h_materials[i]);
-
+    // rear sphere
     h_materials[i+1] = material(MaterialType::LAMBERTIAN, color(0.4f,0.2f,0.1f));
     h_spheres[i+1]   = sphere(point3(-4,1,0), 1.0f, &h_materials[i+1]);
-
+    // front sphere
     h_materials[i+2] = material(MaterialType::METAL, color(0.7f,0.6f,0.5f), 0.0f);
     h_spheres[i+2]   = sphere(point3(4,1,0), 1.0f, &h_materials[i+2]);
 
     world *h_world = new world(h_spheres,num_spheres);
-    // */
 
     // device allocations and transfers
     material *d_materials;

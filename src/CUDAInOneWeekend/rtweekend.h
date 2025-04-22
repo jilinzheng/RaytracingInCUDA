@@ -20,22 +20,22 @@ inline float degrees_to_radians(float degrees) {
 }
 
 inline float random_float() {
-    // returns a random real in [0,1).
+    // returns a random real in [0,1)
     return std::rand() / (RAND_MAX + 1.0f);
 }
 
 inline float random_float(float min, float max) {
-    // returns a random real in [min,max).
+    // returns a random real in [min,max)
     return min + (max-min)*random_float();
 }
 
 __device__ inline float device_random_float(curandState *thread_rand_state) {
-    // returns a random real in (0,1].
+    // returns a random real in (0,1]
     return curand_uniform(thread_rand_state);
 }
 
 __device__ inline float device_random_float(float min, float max, curandState *thread_rand_state) {
-    // returns a random real in [min,max).
+    // returns a random real in (min,max]
     return min + (max-min)*device_random_float(thread_rand_state);
 }
 
