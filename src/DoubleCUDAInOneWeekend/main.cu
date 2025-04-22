@@ -108,38 +108,38 @@ int main() {
     sphere *h_spheres = new sphere[num_spheres];
 
     // ground sphere
-    h_materials[0] = material(MaterialType::LAMBERTIAN, color(0.5f,0.5f,0.5f));
+    h_materials[0] = material(MaterialType::LAMBERTIAN, color(0.5,0.5,0.5));
     h_spheres[0] = sphere(point3(0,-1000,0), 1000, &h_materials[0]);
 
     // small spheres
     for (int a = -11; a < 11; ++a) {
         for (int b = -11; b < 11; ++b) {
-            float choose_mat = random_float();
-            point3 center(a+0.9f*random_float(), 0.2f, b+0.9f*random_float());
+            double choose_mat = random_double();
+            point3 center(a+0.9*random_double(), 0.2, b+0.9*random_double());
 
-            if ((center - point3(4,0.2f,0)).length() > 0.9f) {
+            if ((center - point3(4,0.2,0)).length() > 0.9) {
                 // scale i to start from 1 and index sequentially
                 // zero-based a * total b values + zero-based b + 1
                 // 1 is for the already-created ground sphere
                 int i = (a+11) * 22 + (b+11) + 1;
 
                 // diffuse
-                if (choose_mat < 0.8f) {
+                if (choose_mat < 0.8) {
                     color albedo    = color::random() * color::random();
                     h_materials[i]  = material(MaterialType::LAMBERTIAN, albedo);
-                    h_spheres[i]    = sphere(center, 0.2f, &h_materials[i]);
+                    h_spheres[i]    = sphere(center, 0.2, &h_materials[i]);
                 }
                 // metal
-                else if (choose_mat < 0.95f) {
-                    color albedo    = color::random(0.5f,1.0f);
-                    float fuzz      = random_float(0.0f,0.5f);
+                else if (choose_mat < 0.95) {
+                    color albedo    = color::random(0.5,1.0);
+                    double fuzz      = random_double(0.0,0.5);
                     h_materials[i]  = material(MaterialType::METAL, albedo, fuzz);
-                    h_spheres[i]    = sphere(center, 0.2f, &h_materials[i]);
+                    h_spheres[i]    = sphere(center, 0.2, &h_materials[i]);
                 }
                 // glass
                 else {
-                    h_materials[i]  = material(MaterialType::DIELETRIC, 1.5f);
-                    h_spheres[i]    = sphere(center, 0.2f, &h_materials[i]);
+                    h_materials[i]  = material(MaterialType::DIELETRIC, 1.5);
+                    h_spheres[i]    = sphere(center, 0.2, &h_materials[i]);
                 }
             }
         }
@@ -148,14 +148,14 @@ int main() {
     // big spheres, start index after ground and small spheres
     int i = 1+22*22;
     // middle sphere
-    h_materials[i] = material(MaterialType::DIELETRIC, 1.5f);
-    h_spheres[i]   = sphere(point3(0,1,0), 1.0f, &h_materials[i]);
+    h_materials[i] = material(MaterialType::DIELETRIC, 1.5);
+    h_spheres[i]   = sphere(point3(0,1,0), 1.0, &h_materials[i]);
     // rear sphere
-    h_materials[i+1] = material(MaterialType::LAMBERTIAN, color(0.4f,0.2f,0.1f));
-    h_spheres[i+1]   = sphere(point3(-4,1,0), 1.0f, &h_materials[i+1]);
+    h_materials[i+1] = material(MaterialType::LAMBERTIAN, color(0.4,0.2,0.1));
+    h_spheres[i+1]   = sphere(point3(-4,1,0), 1.0, &h_materials[i+1]);
     // front sphere
-    h_materials[i+2] = material(MaterialType::METAL, color(0.7f,0.6f,0.5f), 0.0f);
-    h_spheres[i+2]   = sphere(point3(4,1,0), 1.0f, &h_materials[i+2]);
+    h_materials[i+2] = material(MaterialType::METAL, color(0.7,0.6,0.5), 0.0);
+    h_spheres[i+2]   = sphere(point3(4,1,0), 1.0, &h_materials[i+2]);
 
     world *h_world = new world(h_spheres,num_spheres);
 
@@ -197,7 +197,7 @@ int main() {
     CUDA_SAFE_CALL(cudaDeviceSynchronize());
 
     // output pixel_buffer as a .ppm image
-    const interval intensity(0.000f,0.999f);
+    const interval intensity(0.000,0.999);
     std::cout << "P3\n" << cam.img_width << " " << cam.img_height << "\n255\n";
     for (int j = 0; j < cam.img_height; ++j) {      // rows
         for (int i = 0; i < cam.img_width; ++i) {   // cols
