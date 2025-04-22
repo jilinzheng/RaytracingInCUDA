@@ -5,6 +5,8 @@
 #include "camera.h"
 #include "curand_kernel.h"
 #include "material.h"
+#include <iostream>
+#include <iomanip>
 
 // assertion to check for errors
 #define CUDA_SAFE_CALL(ans) { gpuAssert((ans), (char *)__FILE__, __LINE__); }
@@ -33,6 +35,14 @@ __global__ void update_material_pointers(sphere* d_spheres, material* d_material
 int main() {
     // select GPU
     CUDA_SAFE_CALL(cudaSetDevice(0));
+
+    /* timing setup */
+    cudaEvent_t gpu_start, gpu_stop;
+    float gpu_elapsed;
+
+    // create cuda events
+    cudaEventCreate(&gpu_start);
+    cudaEventCreate(&gpu_stop);
 
     /* image/camera configuration */
     camera cam;
@@ -192,9 +202,17 @@ int main() {
     CUDA_SAFE_CALL(cudaDeviceSynchronize());
 
     // call the render() kernel
+    cudaEventRecord(gpu_start, 0);
     render<<<dimGrid, dimBlock>>>(pixel_buffer, cam, d_world, d_rand_states);
     CUDA_SAFE_CALL(cudaGetLastError());
     CUDA_SAFE_CALL(cudaDeviceSynchronize());
+    // stop and destroy timer
+    cudaEventRecord(gpu_stop,0);
+    cudaEventSynchronize(gpu_stop);
+    cudaEventElapsedTime(&gpu_elapsed, gpu_start, gpu_stop);
+    std::clog << std::fixed << std::setprecision(8) << std::setw(15) << gpu_elapsed << std::endl;
+    cudaEventDestroy(gpu_start);
+    cudaEventDestroy(gpu_stop);
 
     // output pixel_buffer as a .ppm image
     const interval intensity(0.000f,0.999f);

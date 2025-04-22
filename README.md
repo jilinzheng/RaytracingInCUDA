@@ -1,12 +1,24 @@
 # **CUDA** Ray Tracing in One Weekend
 
-## Bugs
+## Notes
+
+### Bugs
 
 - dielectric does not seem to be refracting/reflecting correctly; changing precision does not work, so it must be some implementation issue...somewhere...
 
-## Float vs. Double
+### Float vs. Double
 
 Runtime ~5s for float vs. ~35s for double.
+
+### ppm_diff
+
+ppm*diff takes three .ppm files as arguments, e.g., input1.ppm, input2.ppm, and
+output_diff.ppm. It calculates the differences between the pixels in
+input1.ppm and input2.ppm and writes it to output_diff.ppm. Minor differences
+between the images thus result in \_darker* areas in the output image, while
+larger differences result in _brighter_ areas in the output image.
+
+Usage: `./ppm_diff base_image.ppm ./src/DoubleCUDAInOneWeekend/cuda_image.ppm diff_image.ppm`
 
 ## Refactoring Motivation
 
