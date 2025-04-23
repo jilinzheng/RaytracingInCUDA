@@ -6,6 +6,9 @@
 #include "material.h"
 #include "color.h"
 
+#define DEBUG_PIXEL_X 576 // Replace with the X coordinate you found
+#define DEBUG_PIXEL_Y 153 // Replace with the Y coordinate you found
+
 
 struct camera {
     int     img_width;              // rendered image width in pixel count
@@ -87,34 +90,36 @@ __device__ color ray_color(const ray& r, int max_depth, const world& world,
         if (hit_world(world, curr_ray, interval(0.001,infinity), rec)) {
             ray scattered;
             color attenuation;
+            bool scatter_success = false;
+
             switch (rec.mat->type) {
                 case MaterialType::LAMBERTIAN: {
-                    if (lambertian_scatter(r,rec,attenuation,scattered,thread_rand_state)) {
-                        curr_attenuation = curr_attenuation * attenuation;
-                        curr_ray = scattered;
-                        break;
+                    scatter_success = lambertian_scatter(curr_ray, rec,
+                        attenuation, scattered, thread_rand_state);
+                    break;
                     }
-                    else return color(0.0,0.0,0.0);
-                }
                 case MaterialType::METAL: {
-                    if (metal_scatter(r,rec,attenuation,scattered,thread_rand_state)) {
-                        curr_attenuation = curr_attenuation * attenuation;
-                        curr_ray = scattered;
-                        break;
-                    }
-                    else return color(0.0,0.0,0.0);
+                    scatter_success = metal_scatter(curr_ray,rec,
+                        attenuation, scattered, thread_rand_state);
+                    break;
                 }
                 case MaterialType::DIELETRIC: {
-                    if (dieletric_scatter(r,rec,attenuation,scattered,thread_rand_state)) {
-                        curr_attenuation = curr_attenuation * attenuation;
-                        curr_ray = scattered;
-                        break;
-                    }
-                    else return color(0.0,0.0,0.0);
+                    scatter_success = dieletric_scatter(curr_ray,rec,
+                        attenuation, scattered, thread_rand_state);
+                    break;
                 }
             }
+
+            if (scatter_success) {
+                // accumulate color
+                curr_attenuation = curr_attenuation * attenuation;
+                // update for next bounce
+                curr_ray = scattered;
+            }
+            // ray was absorbed
+            else return color(0,0,0);
         }
-        // blue-to-white gradient background
+        // ray hit nothing/background, add blue-to-white gradient background and end
         else {
             vec3 unit_direction = unit_vector(r.direction());
             double a = 0.5 * (unit_direction.y() + 1.0);

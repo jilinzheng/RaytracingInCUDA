@@ -13,13 +13,16 @@
 
 #include "hittable.h"
 
+#define DEBUG_PIXEL_X 576 // Replace with the X coordinate you found
+#define DEBUG_PIXEL_Y 153 // Replace with the Y coordinate you found
+
 
 class material {
   public:
     virtual ~material() = default;
 
     virtual bool scatter(
-        const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered
+        const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered, int j, int i
     ) const {
         return false;
     }
@@ -30,7 +33,7 @@ class lambertian : public material {
   public:
     lambertian(const color& albedo) : albedo(albedo) {}
 
-    bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered)
+    bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered, int j, int i)
     const override {
         auto scatter_direction = rec.normal + random_unit_vector();
 
@@ -52,7 +55,7 @@ class metal : public material {
   public:
     metal(const color& albedo, double fuzz) : albedo(albedo), fuzz(fuzz < 1 ? fuzz : 1) {}
 
-    bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered)
+    bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered, int j, int i)
     const override {
         vec3 reflected = reflect(r_in.direction(), rec.normal);
         reflected = unit_vector(reflected) + (fuzz * random_unit_vector());
@@ -71,7 +74,7 @@ class dielectric : public material {
   public:
     dielectric(double refraction_index) : refraction_index(refraction_index) {}
 
-    bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered)
+    bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered ,int j, int i)
     const override {
         attenuation = color(1.0, 1.0, 1.0);
         double ri = rec.front_face ? (1.0/refraction_index) : refraction_index;
@@ -83,10 +86,26 @@ class dielectric : public material {
         bool cannot_refract = ri * sin_theta > 1.0;
         vec3 direction;
 
+        // if (i == DEBUG_PIXEL_X && j == DEBUG_PIXEL_Y) {
+        //      printf("Debug pixel (%d,%d) hitting dielectric at (%f, %f, %f)...\n",
+        //             i, j, rec.p.x(), rec.p.y(), rec.p.z());
+        //      printf("  Incoming uv = %f, %f, %f\n", unit_direction.x(), unit_direction.y(), unit_direction.z());
+        //      printf("  Normal n = %f, %f, %f\n", rec.normal.x(), rec.normal.y(), rec.normal.z());
+        //      printf("  etai_over_etat = %f\n", ri); // ri is your etai_over_etat variable
+        //      printf("  cos_theta = %f\n", cos_theta);
+        //      printf("  sin_theta = %f\n", sin_theta);
+        //      printf("  cannot_refract = %d\n", (int)cannot_refract);
+        //      // You can add printf here before the refract call
+        //      // printf("  Calling refract with uv, n, ri...\n");
+        // }
+
         if (cannot_refract || reflectance(cos_theta, ri) > random_double())
             direction = reflect(unit_direction, rec.normal);
         else
             direction = refract(unit_direction, rec.normal, ri);
+
+        // direction = reflect(unit_direction, rec.normal);
+        // direction = refract(unit_direction, rec.normal, ri);
 
         scattered = ray(rec.p, direction);
         return true;

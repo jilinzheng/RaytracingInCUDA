@@ -43,7 +43,7 @@ class camera {
                 color pixel_color(0,0,0);
                 for (int sample = 0; sample < samples_per_pixel; sample++) {
                     ray r = get_ray(i, j);
-                    pixel_color += ray_color(r, max_depth, world);
+                    pixel_color += ray_color(r, max_depth, world, j, i);
                 }
                 // color is pixel_color / samples_per_pixel; pixel_samples_scale = 1/samples_per_pixel
                 write_color(std::cout, pixel_samples_scale * pixel_color);
@@ -134,7 +134,7 @@ class camera {
     }
 
     // return the ray's color
-    color ray_color(const ray& r, int depth, const hittable& world) const {
+    color ray_color(const ray& r, int depth, const hittable& world, int j, int i) const {
         // If we've exceeded the ray bounce limit, no more light is gathered.
         if (depth <= 0)
             return color(0,0,0);
@@ -144,9 +144,9 @@ class camera {
         if (world.hit(r, interval(0.001, infinity), rec)) {
             ray scattered;
             color attenuation;
-            if (rec.mat->scatter(r, rec, attenuation, scattered))
+            if (rec.mat->scatter(r, rec, attenuation, scattered, j, i))
                 // recursion here - possibility of optimization?
-                return attenuation * ray_color(scattered, depth-1, world);
+                return attenuation * ray_color(scattered, depth-1, world, j, i);
             return color(0,0,0);
         }
 

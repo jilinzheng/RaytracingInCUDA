@@ -75,7 +75,7 @@ int main() {
     cam.samples_per_pixel = 10;
 
     // maximum recursion depth (implemented with for-loop)
-    cam.max_depth = 50;
+    cam.max_depth = 20;
 
     // positonable camera
     cam.vfov        = 20;
