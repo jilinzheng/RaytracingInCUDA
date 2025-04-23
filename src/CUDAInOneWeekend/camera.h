@@ -84,41 +84,43 @@ __device__ color ray_color(const ray& r, int max_depth, const world& world,
     for (int i = 0; i < max_depth; ++i) {
         // track hits
         hit_record rec;
-        if (hit_world(world, curr_ray, interval(0.001f,infinity), rec)) {
+        if (hit_world(world, curr_ray, interval(0.001,infinity), rec)) {
             ray scattered;
             color attenuation;
+            bool scatter_success = false;
+
             switch (rec.mat->type) {
                 case MaterialType::LAMBERTIAN: {
-                    if (lambertian_scatter(r,rec,attenuation,scattered,thread_rand_state)) {
-                        curr_attenuation = curr_attenuation * attenuation;
-                        curr_ray = scattered;
-                        break;
-                    }
-                    else return color(0.0f,0.0f,0.0f);
+                    scatter_success = lambertian_scatter(curr_ray, rec, attenuation,
+                                                         scattered, thread_rand_state);
+                    break;
                 }
                 case MaterialType::METAL: {
-                    if (metal_scatter(r,rec,attenuation,scattered,thread_rand_state)) {
-                        curr_attenuation = curr_attenuation * attenuation;
-                        curr_ray = scattered;
-                        break;
-                    }
-                    else return color(0.0f,0.0f,0.0f);
+                    scatter_success = metal_scatter(curr_ray, rec, attenuation,
+                                                    scattered, thread_rand_state);
+                    break;
                 }
                 case MaterialType::DIELETRIC: {
-                    if (dieletric_scatter(r,rec,attenuation,scattered,thread_rand_state)) {
-                        curr_attenuation = curr_attenuation * attenuation;
-                        curr_ray = scattered;
-                        break;
-                    }
-                    else return color(0.0f,0.0f,0.0f);
+                    scatter_success = dieletric_scatter(curr_ray, rec, attenuation,
+                                                        scattered, thread_rand_state);
+                    break;
                 }
             }
+
+            if (scatter_success) {
+                // accumulate color
+                curr_attenuation = curr_attenuation * attenuation;
+                // update for next bounce
+                curr_ray = scattered;
+            }
+            // ray was absorbed
+            else return color(0,0,0);
         }
-        // blue-to-white gradient background
+        // ray hit nothing/background, add blue-to-white gradient background and end
         else {
             vec3 unit_direction = unit_vector(r.direction());
-            float a = 0.5f * (unit_direction.y() + 1.0f);
-            return curr_attenuation*((1.0f-a)*color(1.0f,1.0f,1.0f)+a*color(0.5f,0.7f,1.0f));
+            double a = 0.5 * (unit_direction.y() + 1.0);
+            return curr_attenuation*((1.0-a)*color(1.0,1.0,1.0)+a*color(0.5,0.7,1.0));
         }
     }
     // max depth reached

@@ -94,18 +94,18 @@ __device__ color ray_color(const ray& r, int max_depth, const world& world,
 
             switch (rec.mat->type) {
                 case MaterialType::LAMBERTIAN: {
-                    scatter_success = lambertian_scatter(curr_ray, rec,
-                        attenuation, scattered, thread_rand_state);
+                    scatter_success = lambertian_scatter(curr_ray, rec, attenuation,
+                                                         scattered, thread_rand_state);
                     break;
-                    }
+                }
                 case MaterialType::METAL: {
-                    scatter_success = metal_scatter(curr_ray,rec,
-                        attenuation, scattered, thread_rand_state);
+                    scatter_success = metal_scatter(curr_ray, rec, attenuation,
+                                                    scattered, thread_rand_state);
                     break;
                 }
                 case MaterialType::DIELETRIC: {
-                    scatter_success = dieletric_scatter(curr_ray,rec,
-                        attenuation, scattered, thread_rand_state);
+                    scatter_success = dieletric_scatter(curr_ray, rec, attenuation,
+                                                        scattered, thread_rand_state);
                     break;
                 }
             }
