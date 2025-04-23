@@ -67,9 +67,8 @@ int main() {
     // cam.img_width   = 1200;
     // cam.img_height  = 675;
 
-    // 720p
     cam.img_width   = 1280;
-    cam.img_height  = 720;
+    cam.img_height  = 768;
 
     // samples to take around a pixel for antialiasing
     cam.samples_per_pixel = 10;

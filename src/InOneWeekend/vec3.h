@@ -143,9 +143,6 @@ inline vec3 reflect(const vec3& v, const vec3& n) {
 }
 
 inline vec3 refract(const vec3& uv, const vec3& n, double etai_over_etat) {
-    // printf("uv = %lf, %lf, %lf\n",uv.x(),uv.y(),uv.z());
-    // printf("n = %lf, %lf, %lf\n",n.x(),n.y(),n.z());
-    // printf("etai_over_etat = %lf\n",etai_over_etat);
     auto cos_theta = std::fmin(dot(-uv, n), 1.0);
     vec3 r_out_perp =  etai_over_etat * (uv + cos_theta*n);
     vec3 r_out_parallel = -std::sqrt(std::fabs(1.0 - r_out_perp.length_squared())) * n;

@@ -66,7 +66,7 @@ int main() {
     world.add(make_shared<sphere>(point3(4, 1, 0), 1.0, material3));
 
     camera cam;
-    cam.aspect_ratio      = 16.0 / 9.0;
+    cam.aspect_ratio      = 5.0 / 3.0;
     // cam.image_width       = 640;
     cam.image_width       = 1280;
     cam.samples_per_pixel = 10;

@@ -86,26 +86,10 @@ class dielectric : public material {
         bool cannot_refract = ri * sin_theta > 1.0;
         vec3 direction;
 
-        // if (i == DEBUG_PIXEL_X && j == DEBUG_PIXEL_Y) {
-        //      printf("Debug pixel (%d,%d) hitting dielectric at (%f, %f, %f)...\n",
-        //             i, j, rec.p.x(), rec.p.y(), rec.p.z());
-        //      printf("  Incoming uv = %f, %f, %f\n", unit_direction.x(), unit_direction.y(), unit_direction.z());
-        //      printf("  Normal n = %f, %f, %f\n", rec.normal.x(), rec.normal.y(), rec.normal.z());
-        //      printf("  etai_over_etat = %f\n", ri); // ri is your etai_over_etat variable
-        //      printf("  cos_theta = %f\n", cos_theta);
-        //      printf("  sin_theta = %f\n", sin_theta);
-        //      printf("  cannot_refract = %d\n", (int)cannot_refract);
-        //      // You can add printf here before the refract call
-        //      // printf("  Calling refract with uv, n, ri...\n");
-        // }
-
         if (cannot_refract || reflectance(cos_theta, ri) > random_double())
             direction = reflect(unit_direction, rec.normal);
         else
             direction = refract(unit_direction, rec.normal, ri);
-
-        // direction = reflect(unit_direction, rec.normal);
-        // direction = refract(unit_direction, rec.normal, ri);
 
         scattered = ray(rec.p, direction);
         return true;

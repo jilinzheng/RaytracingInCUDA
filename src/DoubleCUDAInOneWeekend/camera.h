@@ -14,21 +14,21 @@ struct camera {
     int     img_width;              // rendered image width in pixel count
     int     img_height;             // rendered image height
     int     samples_per_pixel;      // number of random samples for each pixel
-    double   pixel_samples_scale;    // color scale factor for sum of pixel samples
+    double  pixel_samples_scale;    // color scale factor for sum of pixel samples
     int     max_depth;              // maximum recursion depth for ray bounces
     point3  center;                 // camera center
     point3  pixel00_loc;            // location of pixel 0, 0
     vec3    pixel_delta_u;          // offset to pixel to the right
     vec3    pixel_delta_v;          // offset to pixel below
 
-    double   vfov     = 90;              // vertical view angel (field of view)
+    double  vfov     = 90;              // vertical view angel (field of view)
     point3  lookfrom = point3(0,0,0);   // point camera is looking from
     point3  lookat   = point3(0,0,0);   // point camera is looking from
     vec3    vup      = vec3(0,1,0);     // camera-relative "up" direction
     vec3    u,v,w;                      // camera frame basis vectors
 
-    double   defocus_angle = 0;  // variation angle of rays through each pixel
-    double   focus_dist = 10;    // distance from camera lookfrom point to plane of perfect focus
+    double  defocus_angle = 0;  // variation angle of rays through each pixel
+    double  focus_dist = 10;    // distance from camera lookfrom point to plane of perfect focus
     vec3    defocus_disk_u;     // defocus disk horizontal radius
     vec3    defocus_disk_v;     // defocus disk vertical radius
 

@@ -67,15 +67,14 @@ int main() {
     // cam.img_width   = 1200;
     // cam.img_height  = 675;
 
-    // 720p
     cam.img_width   = 1280;
-    cam.img_height  = 720;
+    cam.img_height  = 768;
 
     // samples to take around a pixel for antialiasing
-    cam.samples_per_pixel = 100;
+    cam.samples_per_pixel = 10;
 
     // maximum recursion depth (implemented with for-loop)
-    cam.max_depth = 50;
+    cam.max_depth = 20;
 
     // positonable camera
     cam.vfov        = 20;
