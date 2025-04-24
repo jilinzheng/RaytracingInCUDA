@@ -213,9 +213,6 @@ int main(int argc, char* argv[]) {
                     point3 center(a+0.9*random_float(), 0.2, b+0.9*random_float());
 
                     if ((center - point3(4,0.2,0)).length() > 0.9) {
-                        // scale i to start from 1 and index sequentially
-                        // zero-based a * total b values + zero-based b + 1
-                        // 1 is for the already-created ground sphere
                         int i = (a - 5) * 6 + (b - 5) + 1;
 
                         // diffuse
@@ -242,8 +239,8 @@ int main(int argc, char* argv[]) {
             break;
         }
         default: {
-            // 1 ground, 10*10 small spheres, 3 big spheres
-            num_materials = 1+10*10+3;
+            // 1 ground, 11*11 small spheres, 3 big spheres
+            num_materials = 1+11*11+3;
             num_spheres = num_materials;
 
             h_materials = new material[num_materials];
@@ -342,7 +339,7 @@ int main(int argc, char* argv[]) {
     cudaEventRecord(render_only_stop,0);
     cudaEventSynchronize(render_only_stop);
     cudaEventElapsedTime(&render_only_elapsed, render_only_start, render_only_stop);
-    std::clog << std::fixed << std::setprecision(8)
+    std::cout << std::fixed << std::setprecision(8)
     << std::setw(15) << render_only_elapsed<< ",";
     cudaEventDestroy(render_only_start);
     cudaEventDestroy(render_only_stop);
@@ -350,7 +347,9 @@ int main(int argc, char* argv[]) {
     /* begin writing pixel_buffer out to .ppm file */
     // construct filename
     std::stringstream f_ss;
-    f_ss << "scene" << scene_id
+    f_ss
+        << "./benchmarks/float_global_mem_ppms/"
+        << "scene" << scene_id
         << "_" << width << "x" << height
         << "_" << samples << "samples"
         << "_" << bounces << "bounces"
@@ -394,7 +393,7 @@ int main(int argc, char* argv[]) {
     cudaEventRecord(end_to_end_stop,0);
     cudaEventSynchronize(end_to_end_stop);
     cudaEventElapsedTime(&end_to_end_elapsed, end_to_end_start, end_to_end_stop);
-    std::clog << std::fixed << std::setprecision(8)
+    std::cout << std::fixed << std::setprecision(8)
     << std::setw(15) << end_to_end_elapsed << "\n";
     cudaEventDestroy(end_to_end_start);
     cudaEventDestroy(end_to_end_stop);
