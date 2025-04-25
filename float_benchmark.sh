@@ -4,14 +4,14 @@
 SCENE_IDS=(1 2 3)
 WIDTHS=(320 640 1280 2560)
 HEIGHTS=(192 384 768 1536)
-SAMPLES=(10 100)
+SAMPLES=(10 50 100)
 BOUNCES=(25 50)
-THREADS=(8)
+THREADS=(8 16 32)
 RUNS=5 # Number of times to run each combination
 
 # Output directory and filename for the single CSV file
 OUTPUT_DIR="./benchmarks"
-CSV_FILENAME="${OUTPUT_DIR}/gpu_float_global_mem_timing.csv"
+CSV_FILENAME="${OUTPUT_DIR}/gpu_global_float_timing.csv"
 
 # --- Setup ---
 # Create the output directory if it doesn't exist
@@ -21,7 +21,7 @@ mkdir -p "$OUTPUT_DIR"
 # Use '>' to create or overwrite the file and write the header row.
 # Adjust the "othermetric1,othermetric2,..." part to match the actual
 # column names for the data your executable outputs.
-echo "scene_id,width,height,samples,bounces,run,render_only_time_ms,end_to_end_time_ms" > "$CSV_FILENAME"
+echo "scene_id,width,height,samples,bounces,threads,run,render_only_time_ms,end_to_end_time_ms" > "$CSV_FILENAME"
 
 # --- Nested Loops for Combinations and Runs ---
 
