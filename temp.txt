@@ -1,0 +1,3 @@
+./src/FloatCUDAInOneWeekend/float-cuda-raytrace --scene_id 1 --width 640 --height 384 --samples 50 --bounces 25
+
+./src/DoubleCUDAInOneWeekend/double-cuda-raytrace --scene_id 1 --width 1280 --height 768 --samples 50 --bounces 25 --threads 8

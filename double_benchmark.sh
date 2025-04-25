@@ -6,11 +6,12 @@ WIDTHS=(320 640 1280 2560)
 HEIGHTS=(192 384 768 1536)
 SAMPLES=(10 100)
 BOUNCES=(25 50)
+THREADS=(8)
 RUNS=5 # Number of times to run each combination
 
 # Output directory and filename for the single CSV file
 OUTPUT_DIR="./benchmarks"
-CSV_FILENAME="${OUTPUT_DIR}/double_global_mem_timing.csv"
+CSV_FILENAME="${OUTPUT_DIR}/gpu_double_global_mem_timing.csv"
 
 # --- Setup ---
 # Create the output directory if it doesn't exist
@@ -24,56 +25,60 @@ echo "scene_id,width,height,samples,bounces,run,render_only_time_ms,end_to_end_t
 
 # --- Nested Loops for Combinations and Runs ---
 
-# Loop through all scene IDs
-for scene_id in "${SCENE_IDS[@]}"; do
-  # Loop through all sample counts
-  for samples in "${SAMPLES[@]}"; do
-    # Loop through all bounce counts
-    for bounces in "${BOUNCES[@]}"; do
-      # --- Loop through paired width and height using indices ---
-      # We loop through the indices of the WIDTHS array (assuming HEIGHTS has same size)
-      for i in "${!WIDTHS[@]}"; do
-        # Get the corresponding width and height using the current index
-        width="${WIDTHS[$i]}"
-        height="${HEIGHTS[$i]}"
-        echo "--- Starting runs for: Scene=$scene_id, Res=${width}x${height}, Samples=$samples, Bounces=$bounces ---"
-        # --- Inner Loop for Multiple Runs ---
-        # Loop RUNS times for the current combination
-        for run_num in $(seq 1 $RUNS); do
-          echo "  Running $run_num of $RUNS..."
+# Loop through all threads (per block row)
+for thread in ${THREADS[@]}; do
+  # Loop through all scene IDs
+  for scene_id in "${SCENE_IDS[@]}"; do
+    # Loop through all sample counts
+    for samples in "${SAMPLES[@]}"; do
+      # Loop through all bounce counts
+      for bounces in "${BOUNCES[@]}"; do
+        # --- Loop through paired width and height using indices ---
+        # We loop through the indices of the WIDTHS array (assuming HEIGHTS has same size)
+        for i in "${!WIDTHS[@]}"; do
+          # Get the corresponding width and height using the current index
+          width="${WIDTHS[$i]}"
+          height="${HEIGHTS[$i]}"
+          echo "--- Starting runs for: Scene=$scene_id, Res=${width}x${height}, Samples=$samples, Bounces=$bounces ---"
+          # --- Inner Loop for Multiple Runs ---
+          # Loop RUNS times for the current combination
+          for run_num in $(seq 1 $RUNS); do
+            echo "  Running $run_num of $RUNS..."
 
-          # Execute the raytracing program and CAPTURE its standard output.
-          # Replace './your_raytrace_executable' with your actual command.
-          # Ensure your executable prints the data you want to capture to standard output.
-          # Command substitution $(...) captures the output.
-          EXECUTABLE_OUTPUT=$(
-          ./src/DoubleCUDAInOneWeekend/double-cuda-raytrace \
-              --scene_id "$scene_id" \
-              --width "$width" \
-              --height "$height" \
-              --samples "$samples" \
-              --bounces "$bounces"
-          )
+            # Execute the raytracing program and CAPTURE its standard output.
+            # Replace './your_raytrace_executable' with your actual command.
+            # Ensure your executable prints the data you want to capture to standard output.
+            # Command substitution $(...) captures the output.
+            EXECUTABLE_OUTPUT=$(
+            ./src/DoubleCUDAInOneWeekend/double-cuda-raytrace \
+                --scene_id "$scene_id" \
+                --width "$width" \
+                --height "$height" \
+                --samples "$samples" \
+                --bounces "$bounces" \
+                --threads "$threads"
+            )
 
-          # --- Process Executable Output and Append to CSV ---
-          # We need to format the captured output to fit into the CSV columns.
-          # Assuming your executable outputs space-separated values (e.g., "5.123 0.987")
-          # If your executable outputs comma-separated values or a different format,
-          # you will need to adjust the processing below.
+            # --- Process Executable Output and Append to CSV ---
+            # We need to format the captured output to fit into the CSV columns.
+            # Assuming your executable outputs space-separated values (e.g., "5.123 0.987")
+            # If your executable outputs comma-separated values or a different format,
+            # you will need to adjust the processing below.
 
-          # Example: Replacing spaces in output with commas for CSV
-          # PROCESSED_OUTPUT=$(echo "$EXECUTABLE_OUTPUT" | tr ' ' ',')
+            # Example: Replacing spaces in output with commas for CSV
+            # PROCESSED_OUTPUT=$(echo "$EXECUTABLE_OUTPUT" | tr ' ' ',')
 
-          # Construct the full CSV line with all parameters and the processed output,
-          # then append it to the single CSV file.
-          echo "${scene_id},${width},${height},${samples},${bounces},${run_num},${EXECUTABLE_OUTPUT}" >> "$CSV_FILENAME"
-        done # End of RUNS loop
-      echo "--- Finished runs for: Scene=$scene_id, Res=${width}x${height}, Samples=$samples, Bounces=$bounces ---"
-      echo "" # Add a blank line for readability between combinations in the log
-      done # End of WidthxHeight loop
-    done # End of BOUNCES loop
-  done # End of SAMPLES loop
-done # End of SCENE_IDS loop
+            # Construct the full CSV line with all parameters and the processed output,
+            # then append it to the single CSV file.
+            echo "${scene_id},${width},${height},${samples},${bounces},${threads},${run_num},${EXECUTABLE_OUTPUT}" >> "$CSV_FILENAME"
+          done # End of RUNS loop
+        echo "--- Finished runs for: Scene=$scene_id, Res=${width}x${height}, Samples=$samples, Bounces=$bounces, Threads=$threads ---"
+        echo "" # Add a blank line for readability between combinations in the log
+        done # End of WidthxHeight loop
+      done # End of BOUNCES loop
+    done # End of SAMPLES loop
+  done # End of SCENE_IDS loop
+done # End of THREADS loop
 
 echo "All combinations and runs complete. All results saved in '$CSV_FILENAME'."
 

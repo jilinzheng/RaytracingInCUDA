@@ -20,7 +20,15 @@ inline void gpuAssert(cudaError_t code, char *file, int line, bool abort=true) {
     }
 }
 
+#define SCENE_1_NUM_SPHERES (1 + 22 * 22 + 3)
 
+
+__constant__ sphere d_spheres_const[SCENE_1_NUM_SPHERES];
+__constant__ material d_materials_const[SCENE_1_NUM_SPHERES];
+__constant__ world d_world_const; // Assuming world struct is small and fixed size
+
+
+/*
 __global__ void update_world_pointer(world *w, sphere *spheres) {
     if (threadIdx.x == 0 && blockIdx.x == 0) {
         w->spheres = spheres;
@@ -33,8 +41,10 @@ __global__ void update_material_pointers(sphere* d_spheres, material* d_material
             d_spheres[i].mat = &d_materials[i];
     }
 }
+*/
 
-int main(int argc, char *argv[]) {
+
+int main(int argc, char* argv[]) {
     /* begin parsing */
     cxxopts::Options options("./cuda-raytrace",
         "Super Raytrace: Raytracing with CUDA");
@@ -74,6 +84,12 @@ int main(int argc, char *argv[]) {
     int samples = result["samples"].as<int>();
     int bounces = result["bounces"].as<int>();
     int threads_per_2d_block_row = result["threads"].as<int>();
+
+    // Ensure only scene 1 is selected for this constant memory version
+    if (scene_id != 1) {
+        std::cerr << "Error: This version only supports scene_id 1 with constant memory." << std::endl;
+        return 1;
+    }
     /* end parsing */
 
 
@@ -141,145 +157,54 @@ int main(int argc, char *argv[]) {
 
     /* world creation as determined by scene_id */
     // host allocations and initializations
-    int num_materials, num_spheres;
-    material *h_materials;
-    sphere *h_spheres;
+    int num_materials = SCENE_1_NUM_SPHERES;
+    int num_spheres = SCENE_1_NUM_SPHERES;
 
-    switch (scene_id) {
-        // original scene from end of book
-        case 1: {
-            // 1 ground, 22*22 small spheres, 3 big spheres
-            num_materials = 1+22*22+3;
-            num_spheres = num_materials;
+    material *h_materials = new material[num_materials];
+    sphere *h_spheres = new sphere[num_spheres];
 
-            h_materials = new material[num_materials];
-            h_spheres = new sphere[num_spheres];
+    // ground sphere
+    h_materials[0] = material(MaterialType::LAMBERTIAN, color(0.5,0.5,0.5));
+    h_spheres[0] = sphere(point3(0,-1000,0), 1000, 0);
 
-            // ground sphere
-            h_materials[0] = material(MaterialType::LAMBERTIAN, color(0.5,0.5,0.5));
-            h_spheres[0] = sphere(point3(0,-1000,0), 1000, &h_materials[0]);
+    // small spheres
+    int sphere_idx = 1; // start after ground sphere
+    for (int a = -11; a < 11; ++a) {
+        for (int b = -11; b < 11; ++b) {
+            float choose_mat = random_float();
+            point3 center(a+0.9*random_float(), 0.2, b+0.9*random_float());
 
-            // small spheres
-            for (int a = -11; a < 11; ++a) {
-                for (int b = -11; b < 11; ++b) {
-                    double choose_mat = random_double();
-                    point3 center(a+0.9*random_double(), 0.2, b+0.9*random_double());
+            if ((center - point3(4,0.2,0)).length() > 0.9) {
+                // scale i to start from 1 and index sequentially
+                // zero-based a * total b values + zero-based b + 1
+                // 1 is for the already-created ground sphere
+                // int i = (a + 11) * 22 + (b + 11) + 1;
+                int h_idx = sphere_idx;
 
-                    if ((center - point3(4,0.2,0)).length() > 0.9) {
-                        // scale i to start from 1 and index sequentially
-                        // zero-based a * total b values + zero-based b + 1
-                        // 1 is for the already-created ground sphere
-                        int i = (a + 11) * 22 + (b + 11) + 1;
-
-                        // diffuse
-                        if (choose_mat < 0.8) {
-                            color albedo    = color::random() * color::random();
-                            h_materials[i]  = material(MaterialType::LAMBERTIAN, albedo);
-                            h_spheres[i]    = sphere(center, 0.2, &h_materials[i]);
-                        }
-                        // metal
-                        else if (choose_mat < 0.95) {
-                            color albedo    = color::random(0.5,1.0);
-                            double fuzz      = random_double(0.0,0.5);
-                            h_materials[i]  = material(MaterialType::METAL, albedo, fuzz);
-                            h_spheres[i]    = sphere(center, 0.2, &h_materials[i]);
-                        }
-                        // glass
-                        else {
-                            h_materials[i]  = material(MaterialType::DIELETRIC, 1.5);
-                            h_spheres[i]    = sphere(center, 0.2, &h_materials[i]);
-                        }
+                // ensure h_idx doesn't exceed small spheres
+                // NOTE: this check may not be necessary
+                if (h_idx < (1+22*22)) {
+                    // diffuse
+                    if (choose_mat < 0.8) {
+                        color albedo    = color::random() * color::random();
+                        h_materials[sphere_idx]  = material(MaterialType::LAMBERTIAN, albedo);
+                        h_spheres[sphere_idx]    = sphere(center, 0.2, h_idx);
                     }
+                    // metal
+                    else if (choose_mat < 0.95) {
+                        color albedo    = color::random(0.5,1.0);
+                        float fuzz      = random_float(0.0,0.5);
+                        h_materials[h_idx]  = material(MaterialType::METAL, albedo, fuzz);
+                        h_spheres[h_idx]    = sphere(center, 0.2, h_idx);
+                    }
+                    // glass
+                    else {
+                        h_materials[h_idx]  = material(MaterialType::DIELETRIC, 1.5);
+                        h_spheres[h_idx]    = sphere(center, 0.2, h_idx);
+                    }
+                    ++sphere_idx; // only increment when a sphere is added
                 }
             }
-            break;
-        }
-        case 2: {
-            // 1 ground, 6*6 small spheres, 3 big spheres
-            num_materials = 1+6*6+3;
-            num_spheres = num_materials;
-
-            h_materials = new material[num_materials];
-            h_spheres = new sphere[num_spheres];
-
-            // ground sphere
-            h_materials[0] = material(MaterialType::LAMBERTIAN, color(0.5,0.5,0.5));
-            h_spheres[0] = sphere(point3(0,-1000,0), 1000, &h_materials[0]);
-
-            // small spheres
-            for (int a = 5; a < 11; a++) {
-                for (int b = 5; b < 11; b++) {
-                    double choose_mat = random_double();
-                    point3 center(a+0.9*random_double(), 0.2, b+0.9*random_double());
-
-                    if ((center - point3(4,0.2,0)).length() > 0.9) {
-                        int i = (a - 5) * 6 + (b - 5) + 1;
-
-                        // diffuse
-                        if (choose_mat < 0.8) {
-                            color albedo    = color::random() * color::random();
-                            h_materials[i]  = material(MaterialType::LAMBERTIAN, albedo);
-                            h_spheres[i]    = sphere(center, 0.2, &h_materials[i]);
-                        }
-                        // metal
-                        else if (choose_mat < 0.95) {
-                            color albedo    = color::random(0.5,1.0);
-                            double fuzz      = random_double(0.0,0.5);
-                            h_materials[i]  = material(MaterialType::METAL, albedo, fuzz);
-                            h_spheres[i]    = sphere(center, 0.2, &h_materials[i]);
-                        }
-                        // glass
-                        else {
-                            h_materials[i]  = material(MaterialType::DIELETRIC, 1.5);
-                            h_spheres[i]    = sphere(center, 0.2, &h_materials[i]);
-                        }
-                    }
-                }
-            }
-            break;
-        }
-        default: {
-            // 1 ground, 11*11 small spheres, 3 big spheres
-            num_materials = 1+11*11+3;
-            num_spheres = num_materials;
-
-            h_materials = new material[num_materials];
-            h_spheres = new sphere[num_spheres];
-
-            // ground sphere
-            h_materials[0] = material(MaterialType::LAMBERTIAN, color(0.5,0.5,0.5));
-            h_spheres[0] = sphere(point3(0,-1000,0), 1000, &h_materials[0]);
-
-            for (int a = -11; a < 0; a++) {
-                for (int b = -11; b < 0; b++) {
-                    double choose_mat = random_double();
-                    point3 center(a+0.9*random_double(), 0.2, b+0.9*random_double());
-
-                    if ((center - point3(4,0.2,0)).length() > 0.9) {
-                        int i = (a + 11) * 11 + (b + 11) + 1;
-
-                        // diffuse
-                        if (choose_mat < 0.8) {
-                            color albedo    = color::random() * color::random();
-                            h_materials[i]  = material(MaterialType::LAMBERTIAN, albedo);
-                            h_spheres[i]    = sphere(center, 0.2, &h_materials[i]);
-                        }
-                        // metal
-                        else if (choose_mat < 0.95) {
-                            color albedo    = color::random(0.5,1.0);
-                            double fuzz      = random_double(0.0,0.5);
-                            h_materials[i]  = material(MaterialType::METAL, albedo, fuzz);
-                            h_spheres[i]    = sphere(center, 0.2, &h_materials[i]);
-                        }
-                        // glass
-                        else {
-                            h_materials[i]  = material(MaterialType::DIELETRIC, 1.5);
-                            h_spheres[i]    = sphere(center, 0.2, &h_materials[i]);
-                        }
-                    }
-                }
-            }
-            break;
         }
     }
 
@@ -287,38 +212,43 @@ int main(int argc, char *argv[]) {
     int i = num_spheres-3;
     // middle sphere
     h_materials[i] = material(MaterialType::DIELETRIC, 1.5);
-    h_spheres[i]   = sphere(point3(0,1,0), 1.0, &h_materials[i]);
+    h_spheres[i]   = sphere(point3(0,1,0), 1.0, i);
     // rear sphere
     h_materials[i+1] = material(MaterialType::LAMBERTIAN, color(0.4,0.2,0.1));
-    h_spheres[i+1]   = sphere(point3(-4,1,0), 1.0, &h_materials[i+1]);
+    h_spheres[i+1]   = sphere(point3(-4,1,0), 1.0, i+1);
     // front sphere
     h_materials[i+2] = material(MaterialType::METAL, color(0.7,0.6,0.5), 0.0);
-    h_spheres[i+2]   = sphere(point3(4,1,0), 1.0, &h_materials[i+2]);
+    h_spheres[i+2]   = sphere(point3(4,1,0), 1.0, i+2);
 
-    world *h_world = new world(h_spheres,num_spheres);
+    // world *h_world = new world(h_spheres,num_spheres);
+    world h_world_for_const;
+    h_world_for_const.num_spheres = num_spheres;
 
     // device allocations and transfers
-    material *d_materials;
-    CUDA_SAFE_CALL(cudaMalloc(&d_materials,num_materials*sizeof(material)));
-    CUDA_SAFE_CALL(cudaMemcpy(d_materials,h_materials,num_materials*sizeof(material),
-        cudaMemcpyHostToDevice));
+    // material *d_materials;
+    // CUDA_SAFE_CALL(cudaMalloc(&d_materials,num_materials*sizeof(material)));
+    // CUDA_SAFE_CALL(cudaMemcpy(d_materials,h_materials,num_materials*sizeof(material),
+    //     cudaMemcpyHostToDevice));
 
-    sphere *d_spheres;
-    CUDA_SAFE_CALL(cudaMalloc(&d_spheres, num_spheres*sizeof(sphere)));
-    CUDA_SAFE_CALL(cudaMemcpy(d_spheres,h_spheres,num_spheres*sizeof(sphere),
-        cudaMemcpyHostToDevice));
+    // sphere *d_spheres;
+    // CUDA_SAFE_CALL(cudaMalloc(&d_spheres, num_spheres*sizeof(sphere)));
+    // CUDA_SAFE_CALL(cudaMemcpy(d_spheres,h_spheres,num_spheres*sizeof(sphere),
+    //     cudaMemcpyHostToDevice));
 
-    world *d_world;
-    CUDA_SAFE_CALL(cudaMalloc(&d_world,sizeof(world)));
-    CUDA_SAFE_CALL(cudaMemcpy(d_world,h_world,sizeof(world),
-        cudaMemcpyHostToDevice));
+    // world *d_world;
+    // CUDA_SAFE_CALL(cudaMalloc(&d_world,sizeof(world)));
+    // CUDA_SAFE_CALL(cudaMemcpy(d_world,h_world,sizeof(world),
+    //     cudaMemcpyHostToDevice));
+    CUDA_SAFE_CALL(cudaMemcpyToSymbol(d_spheres_const, h_spheres, num_spheres * sizeof(sphere)));
+    CUDA_SAFE_CALL(cudaMemcpyToSymbol(d_materials_const, h_materials, num_materials * sizeof(material)));
+    CUDA_SAFE_CALL(cudaMemcpyToSymbol(d_world_const, &h_world_for_const, sizeof(world)));
 
     // update world and material pointers since host pointers are invalid after transfer
     // after transferring to device
-    update_world_pointer<<<1,1>>>(d_world, d_spheres);
-    update_material_pointers<<<1,1>>>(d_spheres, d_materials, num_spheres);
-    CUDA_SAFE_CALL(cudaGetLastError());
-    CUDA_SAFE_CALL(cudaDeviceSynchronize());
+    // update_world_pointer<<<1,1>>>(d_world, d_spheres);
+    // update_material_pointers<<<1,1>>>(d_spheres, d_materials, num_spheres);
+    // CUDA_SAFE_CALL(cudaGetLastError());
+    // CUDA_SAFE_CALL(cudaDeviceSynchronize());
     /* end world creation*/
 
 
@@ -332,7 +262,8 @@ int main(int argc, char *argv[]) {
     // call the render() kernel
     // start (render) kernel-only timing
     cudaEventRecord(render_only_start, 0);
-    render<<<dimGrid, dimBlock>>>(pixel_buffer, cam, d_world, d_rand_states);
+    // render<<<dimGrid, dimBlock>>>(pixel_buffer, cam, d_world, d_rand_states);
+    render<<<dimGrid, dimBlock>>>(pixel_buffer, cam, d_rand_states);
     CUDA_SAFE_CALL(cudaGetLastError());
     CUDA_SAFE_CALL(cudaDeviceSynchronize());
     // stop (render) kernel-only timing
@@ -340,7 +271,7 @@ int main(int argc, char *argv[]) {
     cudaEventSynchronize(render_only_stop);
     cudaEventElapsedTime(&render_only_elapsed, render_only_start, render_only_stop);
     std::cout << std::fixed << std::setprecision(8)
-    << std::setw(15) << render_only_elapsed << ",";
+    << std::setw(15) << render_only_elapsed<< ",";
     cudaEventDestroy(render_only_start);
     cudaEventDestroy(render_only_stop);
 
@@ -381,13 +312,13 @@ int main(int argc, char *argv[]) {
 
     // cudaFree device allocations, delete host heap allocations
     CUDA_SAFE_CALL(cudaFree(pixel_buffer));
-    CUDA_SAFE_CALL(cudaFree(d_materials));
-    CUDA_SAFE_CALL(cudaFree(d_spheres));
-    CUDA_SAFE_CALL(cudaFree(d_world));
+    // CUDA_SAFE_CALL(cudaFree(d_materials));
+    // CUDA_SAFE_CALL(cudaFree(d_spheres));
+    // CUDA_SAFE_CALL(cudaFree(d_world));
     CUDA_SAFE_CALL(cudaFree(d_rand_states));
     delete[] h_materials;
     delete[] h_spheres;
-    delete h_world;
+    // delete h_world;
 
     // stop end-to-end timing
     cudaEventRecord(end_to_end_stop,0);

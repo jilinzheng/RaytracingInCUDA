@@ -3,7 +3,7 @@
 FLOAT_DIR=./src/FloatCUDAInOneWeekend
 DOUBLE_DIR=./src/DoubleCUDAInOneWeekend
 
-nvcc $FLOAT_DIR/main.cu \
+nvcc $FLOAT_DIR/main_global_mem.cu \
     -o $FLOAT_DIR/float-cuda-raytrace \
     -O3 \
     -gencode arch=compute_86,code=sm_86

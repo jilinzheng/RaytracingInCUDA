@@ -50,7 +50,7 @@ int main(int argc, char* argv[]) {
             cxxopts::value<int>()->default_value("10"))
         ("bounces", "Maximum number of ray bounces",
             cxxopts::value<int>()->default_value("25"))
-        ("threads_per_2d_block_row", "Number of threads per 2-D thread block.",
+        ("threads", "Number of threads per 2-D thread block row.",
             cxxopts::value<int>()->default_value("8"))
         ("h,help", "Print usage"); // Added a help flag
 
@@ -73,7 +73,7 @@ int main(int argc, char* argv[]) {
     int height = result["height"].as<int>();
     int samples = result["samples"].as<int>();
     int bounces = result["bounces"].as<int>();
-    int threads_per_2d_block_row = result["threads_per_2d_block_row"].as<int>();
+    int threads_per_2d_block_row = result["threads"].as<int>();
     /* end parsing */
 
 
@@ -348,11 +348,11 @@ int main(int argc, char* argv[]) {
     // construct filename
     std::stringstream f_ss;
     f_ss
-        << "./benchmarks/float_global_mem_ppms/"
         << "scene" << scene_id
         << "_" << width << "x" << height
         << "_" << samples << "samples"
         << "_" << bounces << "bounces"
+        << "_" << threads_per_2d_block_row << "threadsPerBlockRow"
         << ".ppm";
     std::string f = f_ss.str();
 
