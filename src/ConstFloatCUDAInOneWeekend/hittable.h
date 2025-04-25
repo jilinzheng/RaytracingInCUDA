@@ -33,8 +33,8 @@ struct material {
     float fuzz;
     double refraction_index;
 
-    // __host__ __device__ material() {}
-    __host__ __device__ material() = default;
+    __host__ __device__ material() {}
+    // __host__ __device__ material() = default;
     // lambertian constructor
     __host__ __device__ material(MaterialType type, color albedo)
         : type(type), albedo(albedo) {}
@@ -53,8 +53,8 @@ struct sphere {
     // material *mat;
     int mat_idx;
 
-    // __host__ __device__ sphere() {}
-    __host__ __device__ sphere() = default;
+    __host__ __device__ sphere() {}
+    // __host__ __device__ sphere() = default;
     __host__ __device__ sphere(point3 cen, float r, int mat_idx)
         : center(cen), radius(r), mat_idx(mat_idx) {}
 };
