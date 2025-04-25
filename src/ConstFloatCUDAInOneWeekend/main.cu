@@ -28,22 +28,6 @@ __constant__ material d_materials_const[SCENE_1_NUM_SPHERES];
 __constant__ world d_world_const; // Assuming world struct is small and fixed size
 
 
-/*
-__global__ void update_world_pointer(world *w, sphere *spheres) {
-    if (threadIdx.x == 0 && blockIdx.x == 0) {
-        w->spheres = spheres;
-    }
-}
-
-__global__ void update_material_pointers(sphere* d_spheres, material* d_materials, int num_spheres) {
-    if (threadIdx.x == 0 && blockIdx.x == 0) {
-        for (int i = 0; i < num_spheres; ++i)
-            d_spheres[i].mat = &d_materials[i];
-    }
-}
-*/
-
-
 int main(int argc, char* argv[]) {
     /* begin parsing */
     cxxopts::Options options("./cuda-raytrace",
@@ -178,7 +162,6 @@ int main(int argc, char* argv[]) {
                 // scale i to start from 1 and index sequentially
                 // zero-based a * total b values + zero-based b + 1
                 // 1 is for the already-created ground sphere
-                // int i = (a + 11) * 22 + (b + 11) + 1;
                 int h_idx = sphere_idx;
 
                 // ensure h_idx doesn't exceed small spheres
@@ -220,35 +203,12 @@ int main(int argc, char* argv[]) {
     h_materials[i+2] = material(MaterialType::METAL, color(0.7,0.6,0.5), 0.0);
     h_spheres[i+2]   = sphere(point3(4,1,0), 1.0, i+2);
 
-    // world *h_world = new world(h_spheres,num_spheres);
     world h_world_for_const;
     h_world_for_const.num_spheres = num_spheres;
 
-    // device allocations and transfers
-    // material *d_materials;
-    // CUDA_SAFE_CALL(cudaMalloc(&d_materials,num_materials*sizeof(material)));
-    // CUDA_SAFE_CALL(cudaMemcpy(d_materials,h_materials,num_materials*sizeof(material),
-    //     cudaMemcpyHostToDevice));
-
-    // sphere *d_spheres;
-    // CUDA_SAFE_CALL(cudaMalloc(&d_spheres, num_spheres*sizeof(sphere)));
-    // CUDA_SAFE_CALL(cudaMemcpy(d_spheres,h_spheres,num_spheres*sizeof(sphere),
-    //     cudaMemcpyHostToDevice));
-
-    // world *d_world;
-    // CUDA_SAFE_CALL(cudaMalloc(&d_world,sizeof(world)));
-    // CUDA_SAFE_CALL(cudaMemcpy(d_world,h_world,sizeof(world),
-    //     cudaMemcpyHostToDevice));
     CUDA_SAFE_CALL(cudaMemcpyToSymbol(d_spheres_const, h_spheres, num_spheres * sizeof(sphere)));
     CUDA_SAFE_CALL(cudaMemcpyToSymbol(d_materials_const, h_materials, num_materials * sizeof(material)));
     CUDA_SAFE_CALL(cudaMemcpyToSymbol(d_world_const, &h_world_for_const, sizeof(world)));
-
-    // update world and material pointers since host pointers are invalid after transfer
-    // after transferring to device
-    // update_world_pointer<<<1,1>>>(d_world, d_spheres);
-    // update_material_pointers<<<1,1>>>(d_spheres, d_materials, num_spheres);
-    // CUDA_SAFE_CALL(cudaGetLastError());
-    // CUDA_SAFE_CALL(cudaDeviceSynchronize());
     /* end world creation*/
 
 
@@ -262,7 +222,6 @@ int main(int argc, char* argv[]) {
     // call the render() kernel
     // start (render) kernel-only timing
     cudaEventRecord(render_only_start, 0);
-    // render<<<dimGrid, dimBlock>>>(pixel_buffer, cam, d_world, d_rand_states);
     render<<<dimGrid, dimBlock>>>(pixel_buffer, cam, d_rand_states);
     CUDA_SAFE_CALL(cudaGetLastError());
     CUDA_SAFE_CALL(cudaDeviceSynchronize());
@@ -312,13 +271,9 @@ int main(int argc, char* argv[]) {
 
     // cudaFree device allocations, delete host heap allocations
     CUDA_SAFE_CALL(cudaFree(pixel_buffer));
-    // CUDA_SAFE_CALL(cudaFree(d_materials));
-    // CUDA_SAFE_CALL(cudaFree(d_spheres));
-    // CUDA_SAFE_CALL(cudaFree(d_world));
     CUDA_SAFE_CALL(cudaFree(d_rand_states));
     delete[] h_materials;
     delete[] h_spheres;
-    // delete h_world;
 
     // stop end-to-end timing
     cudaEventRecord(end_to_end_stop,0);

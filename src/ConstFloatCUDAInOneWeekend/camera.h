@@ -75,8 +75,6 @@ __device__ point3 defocus_disk_sample(camera& cam,curandState *thread_rand_state
     return cam.center + (p[0] * cam.defocus_disk_u) + (p[1] * cam.defocus_disk_v);
 }
 
-// __device__ color ray_color(const ray& r, int max_depth, const world& world,
-//     curandState *thread_rand_state) {
 __device__ color ray_color(const ray& r, int max_depth, curandState *thread_rand_state) {
     // for loop instead of recursion;
     // GPU freaks out when not being able to detect stack size...
@@ -129,7 +127,6 @@ __device__ color ray_color(const ray& r, int max_depth, curandState *thread_rand
     return color(0,0,0);
 }
 
-// __global__ void render(vec3 *pixel_buffer, camera cam, world *d_world, curandState *rand_states) {
 __global__ void render(vec3 *pixel_buffer, camera cam, curandState *rand_states) {
     int i = threadIdx.x + blockIdx.x * blockDim.x;
     int j = threadIdx.y + blockIdx.y * blockDim.y;
@@ -160,7 +157,6 @@ __global__ void render(vec3 *pixel_buffer, camera cam, curandState *rand_states)
         // accumulate the various samples' colors
         // TODO: multiple accumulators and/or loop unrolling here?!!!
         // samples can be incremented by k = 2, 4, 8, etc.
-        // pixel_color += ray_color(r, cam.max_depth, *d_world, &thread_rand_state);
         pixel_color += ray_color(r, cam.max_depth, &thread_rand_state);
     }
 

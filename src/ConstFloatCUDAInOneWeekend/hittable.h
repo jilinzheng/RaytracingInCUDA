@@ -15,7 +15,6 @@ struct hit_record {
     vec3 normal;
     float t;
     bool front_face;
-    // material *mat;
     int mat_idx;
 };
 
@@ -34,7 +33,6 @@ struct material {
     double refraction_index;
 
     __host__ __device__ material() {}
-    // __host__ __device__ material() = default;
     // lambertian constructor
     __host__ __device__ material(MaterialType type, color albedo)
         : type(type), albedo(albedo) {}
@@ -50,11 +48,9 @@ struct material {
 struct sphere {
     point3 center;
     float radius;
-    // material *mat;
     int mat_idx;
 
     __host__ __device__ sphere() {}
-    // __host__ __device__ sphere() = default;
     __host__ __device__ sphere(point3 cen, float r, int mat_idx)
         : center(cen), radius(r), mat_idx(mat_idx) {}
 };
@@ -62,7 +58,6 @@ struct sphere {
 // world consists of sphere and any other objects in the future
 // analogous to hittable_list - chapter 6.5
 struct world {
-    // sphere* spheres;
     int num_spheres;
     // add other object types as needed
 
@@ -109,7 +104,6 @@ __device__ bool hit_sphere(const sphere& s, const ray& r,
     rec.p = r.at(rec.t);
     vec3 outward_normal = (rec.p - s.center) / s.radius;
     set_face_normal(rec,r,outward_normal);
-    // rec.mat = s.mat;
     rec.mat_idx = s.mat_idx;
 
     return true;
@@ -117,24 +111,14 @@ __device__ bool hit_sphere(const sphere& s, const ray& r,
 
 
 // hit function for the entire world
-// __device__ bool hit_world(const world& w, const ray& r,
-//     interval ray_t, hit_record& rec) {
 __device__ bool hit_world(const ray& r, interval ray_t, hit_record& rec) {
     hit_record temp_rec;
     bool hit_anything = false;
     float closest_so_far = ray_t.max;
 
-    // check all spheres
-    // for (int i = 0; i < w.num_spheres; i++) {
-    //     if (hit_sphere(w.spheres[i], r, interval(ray_t.min, closest_so_far), temp_rec)) {
-    //         hit_anything = true;
-    //         closest_so_far = temp_rec.t;
-    //         rec = temp_rec;
-    //     }
-    // }
     // check all spheres using the constant array and count from constant world struct
     for (int i = 0; i < d_world_const.num_spheres; i++) {
-        // Access sphere from the constant array
+        // access sphere from the constant array
         if (hit_sphere(d_spheres_const[i], r, interval(ray_t.min, closest_so_far), temp_rec)) {
             hit_anything = true;
             closest_so_far = temp_rec.t;
