@@ -1,17 +1,20 @@
 #!/usr/bin/bash
 
 # --- Configuration Variables ---
-SCENE_IDS=(1 2 3)
-WIDTHS=(320 640 1280 2560)
-HEIGHTS=(192 384 768 1536)
-SAMPLES=(10 50 100)
+# SCENE_IDS=(1 2 3)
+SCENE_IDS=(1)
+# WIDTHS=(320 640 1280 2560)
+# HEIGHTS=(192 384 768 1536)
+WIDTHS=(320 640 1280)
+HEIGHTS=(192 384 768)
+SAMPLES=(10 100)
 BOUNCES=(25 50)
 THREADS=(8 16 32)
 RUNS=5 # Number of times to run each combination
 
 # Output directory and filename for the single CSV file
 OUTPUT_DIR="./benchmarks"
-CSV_FILENAME="${RUTPUT_DIR}/gpu_const_double_timing.csv"
+CSV_FILENAME="${OUTPUT_DIR}/gpu_const_double_timing.csv"
 
 # --- Setup ---
 # Create the output directory if it doesn't exist
@@ -26,7 +29,7 @@ echo "scene_id,width,height,samples,bounces,threads,run,render_only_time_ms,end_
 # --- Nested Loops for Combinations and Runs ---
 
 # Loop through all threads (per block row)
-for thread in ${THREADS[@]}; do
+for threads in ${THREADS[@]}; do
   # Loop through all scene IDs
   for scene_id in "${SCENE_IDS[@]}"; do
     # Loop through all sample counts
@@ -39,7 +42,7 @@ for thread in ${THREADS[@]}; do
           # Get the corresponding width and height using the current index
           width="${WIDTHS[$i]}"
           height="${HEIGHTS[$i]}"
-          echo "--- Starting runs for: Scene=$scene_id, Res=${width}x${height}, Samples=$samples, Bounces=$bounces ---"
+          echo "--- Starting runs for: Scene=$scene_id, Res=${width}x${height}, Samples=$samples, Bounces=$bounces, Threads=$threads ---"
           # --- Inner Loop for Multiple Runs ---
           # Loop RUNS times for the current combination
           for run_num in $(seq 1 $RUNS); do

@@ -238,6 +238,7 @@ int main(int argc, char* argv[]) {
     // construct filename
     std::stringstream f_ss;
     f_ss
+        << "const_double_"
         << "scene" << scene_id
         << "_" << width << "x" << height
         << "_" << samples << "samples"

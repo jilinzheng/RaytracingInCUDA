@@ -348,6 +348,7 @@ int main(int argc, char* argv[]) {
     // construct filename
     std::stringstream f_ss;
     f_ss
+        << "global_float_"
         << "scene" << scene_id
         << "_" << width << "x" << height
         << "_" << samples << "samples"
