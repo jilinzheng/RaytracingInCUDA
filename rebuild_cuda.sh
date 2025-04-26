@@ -20,7 +20,3 @@ if nvcc $DOUBLE_DIR/main.cu \
 then
     echo "double-cuda-raytrace successfully built!"
 fi
-
-# nvprof  --metrics inst_fp_32,inst_fp_64 \
-#        --trace gpu\
-#        ./cuda-raytrace > image.ppm
