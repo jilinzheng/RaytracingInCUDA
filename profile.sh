@@ -19,24 +19,24 @@
 
 ncu --set detailed -k render -o const-double-render-profile ./src/ConstDoubleCUDAInOneWeekend/const-double-cuda-raytrace --scene_id 1
 
-ncu --set detailed -k render -o const-double-render-profile ./src/ConstDoubleCUDAInOneWeekend/const-double-cuda-raytrace --scene_id 1
+ncu --set detailed -k render -o const-float-render-profile ./src/ConstFloatCUDAInOneWeekend/const-float-cuda-raytrace --scene_id 1
 
-ncu --set detailed -k render -o const-double-render-profile ./src/ConstDoubleCUDAInOneWeekend/const-double-cuda-raytrace --scene_id 1
+ncu --set detailed -k render -o double-render-profile ./src/DoubleCUDAInOneWeekend/double-cuda-raytrace --scene_id 1
 
-ncu --set detailed -k render -o const-double-render-profile ./src/ConstDoubleCUDAInOneWeekend/const-double-cuda-raytrace --scene_id 1
+ncu --set detailed -k render -o float-render-profile ./src/FloatCUDAInOneWeekend/float-cuda-raytrace --scene_id 1
 
 
-ncu -k render --metrics smsp__sass_thread_inst_executed_op_fp32_pred_on.sum,smsp__sass_thread_inst_executed_op_fp64_pred_on.sum \
-    ./src/ConstDoubleCUDAInOneWeekend/const-double-cuda-raytrace --scene_id 1
+# ncu -k render --metrics smsp__sass_thread_inst_executed_op_fp32_pred_on.sum,smsp__sass_thread_inst_executed_op_fp64_pred_on.sum \
+#     ./src/ConstDoubleCUDAInOneWeekend/const-double-cuda-raytrace --scene_id 1
 
-ncu -k render --metrics smsp__sass_thread_inst_executed_op_fp32_pred_on.sum,smsp__sass_thread_inst_executed_op_fp64_pred_on.sum \
-    ./src/DoubleCUDAInOneWeekend/double-cuda-raytrace --scene_id 1
+# ncu -k render --metrics smsp__sass_thread_inst_executed_op_fp32_pred_on.sum,smsp__sass_thread_inst_executed_op_fp64_pred_on.sum \
+#     ./src/DoubleCUDAInOneWeekend/double-cuda-raytrace --scene_id 1
 
-ncu -k render --metrics smsp__sass_thread_inst_executed_op_fp32_pred_on.sum,smsp__sass_thread_inst_executed_op_fp64_pred_on.sum \
-    ./src/ConstFloatCUDAInOneWeekend/const-float-cuda-raytrace --scene_id 1
+# ncu -k render --metrics smsp__sass_thread_inst_executed_op_fp32_pred_on.sum,smsp__sass_thread_inst_executed_op_fp64_pred_on.sum \
+#     ./src/ConstFloatCUDAInOneWeekend/const-float-cuda-raytrace --scene_id 1
 
-ncu -k render --metrics smsp__sass_thread_inst_executed_op_fp32_pred_on.sum,smsp__sass_thread_inst_executed_op_fp64_pred_on.sum \
-    ./src/FloatCUDAInOneWeekend/float-cuda-raytrace --scene_id 1
+# ncu -k render --metrics smsp__sass_thread_inst_executed_op_fp32_pred_on.sum,smsp__sass_thread_inst_executed_op_fp64_pred_on.sum \
+#     ./src/FloatCUDAInOneWeekend/float-cuda-raytrace --scene_id 1
 
 # NOTE: curandState = curandStateXORWOW has double in the struct,
 # so profiling the float implementations still have some fp64 used...
