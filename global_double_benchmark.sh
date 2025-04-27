@@ -12,7 +12,7 @@ RUNS=5 # Number of times to run each combination
 
 # Output directory and filename for the single CSV file
 OUTPUT_DIR="./benchmarks"
-CSV_FILENAME="${OUTPUT_DIR}/250427_gpu_const_double_timing.csv"
+CSV_FILENAME="${OUTPUT_DIR}/250427_gpu_global_double_timing.csv"
 
 # --- Setup ---
 # Create the output directory if it doesn't exist
@@ -51,7 +51,7 @@ for threads in ${THREADS[@]}; do
             # Ensure your executable prints the data you want to capture to standard output.
             # Command substitution $(...) captures the output.
             EXECUTABLE_OUTPUT=$(
-            ./src/ConstDoubleCUDAInOneWeekend/const-double-cuda-raytrace \
+            ./src/GlobalDoubleCUDAInOneWeekend/global-double-cuda-raytrace \
                 --scene_id "$scene_id" \
                 --width "$width" \
                 --height "$height" \

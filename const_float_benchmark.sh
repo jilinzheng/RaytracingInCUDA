@@ -3,18 +3,16 @@
 # --- Configuration Variables ---
 # SCENE_IDS=(1 2 3)
 SCENE_IDS=(1)
-# WIDTHS=(320 640 1280 2560)
-# HEIGHTS=(192 384 768 1536)
-WIDTHS=(320 640 1280)
-HEIGHTS=(192 384 768)
+WIDTHS=(320 480 640 960 1280)
+HEIGHTS=(192 288 384 576 768)
 SAMPLES=(10 100)
-BOUNCES=(25 50)
-THREADS=(8 16 32)
+BOUNCES=(25)
+THREADS=(4 8 16 32)
 RUNS=5 # Number of times to run each combination
 
 # Output directory and filename for the single CSV file
 OUTPUT_DIR="./benchmarks"
-CSV_FILENAME="${OUTPUT_DIR}/gpu_const_float_timing.csv"
+CSV_FILENAME="${OUTPUT_DIR}/250427_gpu_const_float_timing.csv"
 
 # --- Setup ---
 # Create the output directory if it doesn't exist
