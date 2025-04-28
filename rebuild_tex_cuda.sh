@@ -8,6 +8,7 @@ if nvcc $TEX_FLOAT_DIR/main.cu \
     -O3 \
     -gencode arch=compute_86,code=sm_86 \
     -gencode arch=compute_70,code=sm_70 \
+    --ptxas-options=-v \
     -rdc=true ; # SEPARATE COMPILATION AND LINKING
 then
     echo "tex-float-cuda-raytrace successfully built!"

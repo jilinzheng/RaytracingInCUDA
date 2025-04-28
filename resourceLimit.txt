@@ -1,0 +1,73 @@
+jilin@jilin-thinkpad:~/dev/cuda/super-raytrace$ ./rebuild_tex_cuda.sh
+nvcc warning : Support for offline compilation for architectures prior to '<compute/sm/lto>_75' will be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+ptxas info    : 218060 bytes gmem, 76 bytes cmem[3]
+ptxas info    : Compiling entry function '_Z6renderP4vec36cameraP17curandStateXORWOWyyyyy' for 'sm_86'
+ptxas info    : Function properties for _Z6renderP4vec36cameraP17curandStateXORWOWyyyyy
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 92 registers, used 0 barriers, 584 bytes cmem[0]
+ptxas info    : Compile time = 31.493 ms
+ptxas info    : Compiling entry function '_Z8init_rngiiP17curandStateXORWOW' for 'sm_86'
+ptxas info    : Function properties for _Z8init_rngiiP17curandStateXORWOW
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 40 registers, used 0 barriers, 368 bytes cmem[0]
+ptxas info    : Compile time = 8.002 ms
+ptxas info    : Function properties for _Z9ray_colorRK3rayiP17curandStateXORWOWyyyyy
+    8 bytes stack frame, 8 bytes spill stores, 8 bytes spill loads
+ptxas info    : Compile time = 27.324 ms
+ptxas info    : Function properties for _Z19defocus_disk_sampleR6cameraP17curandStateXORWOW
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Compile time = 1.860 ms
+ptxas info    : Function properties for _Z17dieletric_scatterRK3rayRK10hit_recordR4vec3RS_P17curandStateXORWOWy
+    8 bytes stack frame, 8 bytes spill stores, 8 bytes spill loads
+ptxas info    : Compile time = 6.468 ms
+ptxas info    : Function properties for _Z13metal_scatterRK3rayRK10hit_recordR4vec3RS_P17curandStateXORWOWy
+    8 bytes stack frame, 8 bytes spill stores, 8 bytes spill loads
+ptxas info    : Compile time = 4.444 ms
+ptxas info    : Function properties for _Z18lambertian_scatterRK3rayRK10hit_recordR4vec3RS_P17curandStateXORWOWy
+    8 bytes stack frame, 8 bytes spill stores, 8 bytes spill loads
+ptxas info    : Compile time = 3.441 ms
+ptxas info    : Function properties for _Z9hit_worldRK3ray8intervalR10hit_recordyy
+    8 bytes stack frame, 8 bytes spill stores, 8 bytes spill loads
+ptxas info    : Compile time = 4.471 ms
+ptxas info    : Function properties for _Z10hit_sphereRK6sphereRK3ray8intervalR10hit_record
+    8 bytes stack frame, 8 bytes spill stores, 8 bytes spill loads
+ptxas info    : Compile time = 3.676 ms
+ptxas info    : Function properties for _Z15set_face_normalR10hit_recordRK3rayRK4vec3
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Compile time = 1.035 ms
+ptxas info    : 218060 bytes gmem, 76 bytes cmem[3]
+ptxas info    : Compiling entry function '_Z6renderP4vec36cameraP17curandStateXORWOWyyyyy' for 'sm_70'
+ptxas info    : Function properties for _Z6renderP4vec36cameraP17curandStateXORWOWyyyyy
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 92 registers, used 0 barriers, 584 bytes cmem[0]
+ptxas info    : Compile time = 28.225 ms
+ptxas info    : Compiling entry function '_Z8init_rngiiP17curandStateXORWOW' for 'sm_70'
+ptxas info    : Function properties for _Z8init_rngiiP17curandStateXORWOW
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 32 registers, used 0 barriers, 368 bytes cmem[0]
+ptxas info    : Compile time = 6.994 ms
+ptxas info    : Function properties for _Z9ray_colorRK3rayiP17curandStateXORWOWyyyyy
+    8 bytes stack frame, 8 bytes spill stores, 8 bytes spill loads
+ptxas info    : Compile time = 24.493 ms
+ptxas info    : Function properties for _Z19defocus_disk_sampleR6cameraP17curandStateXORWOW
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Compile time = 1.733 ms
+ptxas info    : Function properties for _Z17dieletric_scatterRK3rayRK10hit_recordR4vec3RS_P17curandStateXORWOWy
+    8 bytes stack frame, 8 bytes spill stores, 8 bytes spill loads
+ptxas info    : Compile time = 5.674 ms
+ptxas info    : Function properties for _Z13metal_scatterRK3rayRK10hit_recordR4vec3RS_P17curandStateXORWOWy
+    8 bytes stack frame, 8 bytes spill stores, 8 bytes spill loads
+ptxas info    : Compile time = 3.887 ms
+ptxas info    : Function properties for _Z18lambertian_scatterRK3rayRK10hit_recordR4vec3RS_P17curandStateXORWOWy
+    8 bytes stack frame, 8 bytes spill stores, 8 bytes spill loads
+ptxas info    : Compile time = 2.968 ms
+ptxas info    : Function properties for _Z9hit_worldRK3ray8intervalR10hit_recordyy
+    8 bytes stack frame, 8 bytes spill stores, 8 bytes spill loads
+ptxas info    : Compile time = 3.896 ms
+ptxas info    : Function properties for _Z10hit_sphereRK6sphereRK3ray8intervalR10hit_record
+    8 bytes stack frame, 8 bytes spill stores, 8 bytes spill loads
+ptxas info    : Compile time = 3.162 ms
+ptxas info    : Function properties for _Z15set_face_normalR10hit_recordRK3rayRK4vec3
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Compile time = 0.852 ms
+tex-float-cuda-raytrace successfully built!
