@@ -2,18 +2,14 @@ import pandas as pd
 
 # Define the input and output file names
 input_filenames= [
-    # '250427_gpu_global_double_timing.csv',
-    # '250427_gpu_const_double_timing.csv',
-    # '250427_gpu_global_float_timing.csv',
-    # '250427_gpu_const_float_timing.csv'
-    '250427_gpu_tex_float_timing.csv'
+    '250427_gpu_global_float_timing_100sample.csv',
+    '250427_gpu_const_float_timing_100sample.csv',
+    '250427_gpu_tex_float_timing_100sample.csv'
 ]
 output_filenames = [
-    # '250427_avg_gpu_global_double_timing.csv',
-    # '250427_avg_gpu_const_double_timing.csv',
-    # '250427_avg_gpu_global_float_timing.csv',
-    # '250427_avg_gpu_const_float_timing.csv'
-    '250427_avg_gpu_tex_float_timing.csv'
+    '250427_avg_gpu_global_float_timing_100sample.csv',
+    '250427_avg_gpu_const_float_timing_100sample.csv',
+    '250427_avg_gpu_tex_float_timing_`100sample.csv'
 ]
 
 # Define the columns to group by
