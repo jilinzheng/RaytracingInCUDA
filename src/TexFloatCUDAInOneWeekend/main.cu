@@ -207,17 +207,6 @@ int main(int argc, char* argv[]) {
     // world in constant memory; only need number of spheres from it
     CUDA_SAFE_CALL(cudaMemcpyToSymbol(d_world_const, &h_world, sizeof(world)));
 
-    // material *d_materials;
-    // CUDA_SAFE_CALL(cudaMalloc(&d_materials,num_materials*sizeof(material)));
-    // CUDA_SAFE_CALL(cudaMemcpy(d_materials,h_materials,num_materials*sizeof(material),
-    //     cudaMemcpyHostToDevice));
-
-    // sphere *d_spheres;
-    // CUDA_SAFE_CALL(cudaMalloc(&d_spheres, num_spheres*sizeof(sphere)));
-    // CUDA_SAFE_CALL(cudaMemcpy(d_spheres,h_spheres,num_spheres*sizeof(sphere),
-    //     cudaMemcpyHostToDevice));
-
-    // create texture objects for the allocations
     // pack material and spheres values into simpler structures for texture fetching
     std::vector<float4> h_materials_albedo_fuzz(num_materials);
     std::vector<float> h_materials_refraction_index(num_materials);
@@ -265,17 +254,6 @@ int main(int argc, char* argv[]) {
     CUDA_SAFE_CALL(cudaMemcpy(d_spheres_mat_idx, h_spheres_mat_idx.data(),
         num_spheres * sizeof(int), cudaMemcpyHostToDevice));
 
-    // materials (1D)
-    // cudaResourceDesc resDesc_materials = {};
-    // resDesc_materials.resType = cudaResourceTypeLinear;
-    // resDesc_materials.res.linear.devPtr = d_materials;
-    // resDesc_materials.res.linear.sizeInBytes = num_materials * sizeof(material);
-    // resDesc_materials.res.linear.desc = cudaCreateChannelDesc<material>();
-    // cudaTextureDesc texDesc_materials = {};
-    // texDesc_materials.readMode = cudaReadModeElementType;
-    // cudaTextureObject_t texObj_materials;
-    // CUDA_SAFE_CALL(cudaCreateTextureObject(&texObj_materials,&resDesc_materials,&texDesc_materials,nullptr));
-
     // Texture for Albedo (float3) and Fuzz (float) - stored as float4
     cudaResourceDesc resDesc_albedo_fuzz = {};
     resDesc_albedo_fuzz.resType = cudaResourceTypeLinear;
@@ -309,17 +287,6 @@ int main(int argc, char* argv[]) {
     texDesc_type.readMode = cudaReadModeElementType;
     cudaTextureObject_t texObj_materials_type;
     CUDA_SAFE_CALL(cudaCreateTextureObject(&texObj_materials_type, &resDesc_type, &texDesc_type, nullptr));
-
-    // spheres (1D)
-    // cudaResourceDesc resDesc_spheres = {};
-    // resDesc_spheres.resType = cudaResourceTypeLinear;
-    // resDesc_spheres.res.linear.devPtr = d_spheres;
-    // resDesc_spheres.res.linear.sizeInBytes = num_spheres * sizeof(sphere);
-    // resDesc_spheres.res.linear.desc = cudaCreateChannelDesc<sphere>();
-    // cudaTextureDesc texDesc_spheres = {};
-    // texDesc_spheres.readMode = cudaReadModeElementType;
-    // cudaTextureObject_t texObj_spheres;
-    // CUDA_SAFE_CALL(cudaCreateTextureObject(&texObj_spheres, &resDesc_spheres, &texDesc_spheres, nullptr));
 
     // Texture for Sphere Position (float3) and Radius (float) - stored as float4
     cudaResourceDesc resDesc_center_radius = {};
