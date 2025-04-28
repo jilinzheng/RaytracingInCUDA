@@ -1,0 +1,103 @@
+#ifndef MATERIAL_H
+#define MATERIAL_H
+
+#include "ray.h"
+#include "hittable.h"
+#include "color.h"
+#include "rtweekend.h"
+
+
+// material type identifier
+enum MaterialType {
+    LAMBERTIAN,
+    METAL,
+    DIELETRIC
+};
+
+// generic material struct
+struct material {
+    MaterialType type;
+    color albedo;
+    float fuzz;
+    float refraction_index;
+
+    __host__ __device__ material() {}
+    // lambertian constructor
+    __host__ __device__ material(MaterialType type, color albedo)
+        : type(type), albedo(albedo) {}
+    // metal constructor
+    __host__ __device__ material(MaterialType type, color albedo, float fuzz)
+        : type(type), albedo(albedo), fuzz(fuzz < 1.0f ? fuzz : 1.0f) {}
+    // dieletric constructor
+    __host__ __device__ material(MaterialType type, float refraction_index)
+        : type(type), refraction_index(refraction_index) {}
+};
+
+
+// material-specific scattering functions
+__device__ bool lambertian_scatter(const ray& r_in, const hit_record& rec,
+    color& attenuation, ray& scattered, curandState *thread_rand_state,
+    cudaTextureObject_t texObj_materials_albedo_fuzz) {
+    // choose lambertian diffuse reflectance to always scatter
+    vec3 scatter_direction = rec.normal
+                            + random_unit_vector(thread_rand_state);
+    // catch degenerate scatter direction
+    if (scatter_direction.near_zero()) scatter_direction = rec.normal;
+
+    scattered = ray(rec.p, scatter_direction);
+
+    float4 albedo_fuzz = tex1Dfetch<float4>(texObj_materials_albedo_fuzz, rec.mat_idx);
+    color albedo(albedo_fuzz.x, albedo_fuzz.y, albedo_fuzz.z);
+    attenuation = albedo;
+    return true;
+}
+
+__device__ bool metal_scatter(const ray& r_in, const hit_record& rec,
+    color& attenuation, ray& scattered, curandState *thread_rand_state,
+    cudaTextureObject_t texObj_materials_albedo_fuzz) {
+
+    vec3 reflected = reflect(r_in.direction(), rec.normal);
+    float4 albedo_fuzz = tex1Dfetch<float4>(texObj_materials_albedo_fuzz, rec.mat_idx);
+    color albedo(albedo_fuzz.x, albedo_fuzz.y, albedo_fuzz.z);
+    float fuzz = albedo_fuzz.w;
+
+    reflected = unit_vector(reflected)
+                + (fuzz * random_unit_vector(thread_rand_state));
+    scattered = ray(rec.p, reflected);
+    attenuation = albedo;
+    return (dot(scattered.direction(), rec.normal) > 0);
+}
+
+// Schlick's approximation for reflectance
+__device__ inline float reflectance(float cosine, float refraction_index) {
+    float r0 = (1-refraction_index)/(1+refraction_index);
+    r0 = r0*r0;
+    return r0 + (1-r0)*powf((1-cosine),5);
+}
+
+__device__ bool dieletric_scatter(const ray& r_in, const hit_record& rec,
+    color& attenuation, ray& scattered, curandState *thread_rand_state,
+    cudaTextureObject_t texObj_materials_ri) {
+
+    attenuation = color(1.0f,1.0f,1.0f);
+    float refraction_index = tex1Dfetch<float>(texObj_materials_ri, rec.mat_idx);
+
+    float ri = rec.front_face ? (1.0f/refraction_index) : refraction_index;
+
+    vec3 unit_direction = unit_vector(r_in.direction());
+    float cos_theta = fminf(dot(-unit_direction, rec.normal), 1.0f);
+    float sin_theta = sqrtf(1.0f - cos_theta*cos_theta);
+
+    bool cannot_refract = ri * sin_theta > 1.0f;
+    vec3 direction;
+
+    // Schlick's approximation for reflectance
+    if (cannot_refract || reflectance(cos_theta, ri) > device_random_float(thread_rand_state))
+        direction = reflect(unit_direction, rec.normal);
+    else direction = refract(unit_direction, rec.normal, ri);
+
+    scattered = ray(rec.p, direction);
+    return true;
+}
+
+#endif
