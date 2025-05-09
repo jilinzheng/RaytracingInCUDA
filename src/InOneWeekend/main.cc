@@ -1,3 +1,4 @@
+
 //==============================================================================================
 // Originally written in 2016 by Peter Shirley <ptrshrl@gmail.com>
 //
@@ -9,8 +10,9 @@
 // along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
 //==============================================================================================
 
-#include "rtweekend.h"
 
+// Note: Watch out! Include order will matter!
+#include "rtweekend.h"
 #include "camera.h"
 #include "hittable.h"
 #include "hittable_list.h"
@@ -18,12 +20,14 @@
 #include "sphere.h"
 
 
+// world generation
 int main() {
     hittable_list world;
 
     auto ground_material = make_shared<lambertian>(color(0.5, 0.5, 0.5));
     world.add(make_shared<sphere>(point3(0,-1000,0), 1000, ground_material));
 
+    // range is originally from -11 to 11
     for (int a = -11; a < 11; a++) {
         for (int b = -11; b < 11; b++) {
             auto choose_mat = random_double();
@@ -33,7 +37,7 @@ int main() {
                 shared_ptr<material> sphere_material;
 
                 if (choose_mat < 0.8) {
-                    // diffuse
+                    // diffuse/matte
                     auto albedo = color::random() * color::random();
                     sphere_material = make_shared<lambertian>(albedo);
                     world.add(make_shared<sphere>(center, 0.2, sphere_material));
@@ -62,9 +66,9 @@ int main() {
     world.add(make_shared<sphere>(point3(4, 1, 0), 1.0, material3));
 
     camera cam;
-
-    cam.aspect_ratio      = 16.0 / 9.0;
-    cam.image_width       = 1200;
+    cam.aspect_ratio      = 5.0 / 3.0;
+    // cam.image_width       = 640;
+    cam.image_width       = 1280;
     cam.samples_per_pixel = 10;
     cam.max_depth         = 20;
 
