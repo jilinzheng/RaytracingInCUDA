@@ -2,14 +2,6 @@
 
 ## Notes
 
-### Bugs
-
-- dielectric does not seem to be refracting/reflecting correctly; changing precision does not work, so it must be some implementation issue...somewhere...
-
-### Float vs. Double
-
-Runtime ~5s for float vs. ~35s for double.
-
 ### ppm_diff
 
 ppm*diff takes three .ppm files as arguments, e.g., input1.ppm, input2.ppm, and
