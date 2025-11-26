@@ -6,7 +6,7 @@
 #include "material.h"
 #include <iostream>
 #include <iomanip>
-#include "cxxopts.hpp"
+#include "../external/cxxopts.hpp"
 #include <fstream>
 #include <sstream>
 

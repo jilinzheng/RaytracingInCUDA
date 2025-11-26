@@ -6,7 +6,7 @@
 #include "material.h"
 #include <iostream>
 #include <iomanip>
-#include "cxxopts.hpp"
+#include "../external/cxxopts.hpp"
 #include <fstream>
 #include <sstream>
 
@@ -117,7 +117,8 @@ int main(int argc, char *argv[]) {
     cam.vup         = vec3(0,1,0);
 
     // defocus blur
-    cam.defocus_angle = 0.6;
+    // NOTE: 0 right now!
+    // cam.defocus_angle = 0.6;
     cam.focus_dist    = 10.0;
 
     // initialize the camera given the above parameters

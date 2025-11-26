@@ -69,9 +69,7 @@ struct camera {
         defocus_disk_u = u * defocus_radius;
         defocus_disk_v = v * defocus_radius;
     }
-
-
-  };
+};
 
 __device__ point3 defocus_disk_sample(camera& cam,curandState *thread_rand_state) {
     point3 p = random_in_unit_disk(thread_rand_state);
@@ -88,6 +86,8 @@ __device__ color ray_color(const ray& r, int max_depth, const world& world,
         // track hits
         hit_record rec;
         if (hit_world(world, curr_ray, interval(0.001,infinity), rec)) {
+            // NOTE: need to change to 1 sample to use following line
+            return 0.5 * (rec.normal + color(1,1,1));
             ray scattered;
             color attenuation;
             bool scatter_success = false;
@@ -146,9 +146,11 @@ __global__ void render(vec3 *pixel_buffer, camera cam, world *d_world, curandSta
         // construct a ray originating from camera center,
         // directed at a randomly sampled point (in a square)
         // around the pixel location i,j; NOTE: this is get_ray(i,j)
-        vec3 offset = vec3(curand_uniform_double(&thread_rand_state) - 0.5,
-                           curand_uniform_double(&thread_rand_state) - 0.5,
-                           0);
+        // vec3 offset = vec3(curand_uniform_double(&thread_rand_state) - 0.5,
+        //                    curand_uniform_double(&thread_rand_state) - 0.5,
+        //                    0);
+        // NOTE: not random right now!
+        vec3 offset = vec3(0,0,0);
         point3 pixel_sample = cam.pixel00_loc
                                + ((i + offset.x()) * cam.pixel_delta_u)
                                + ((j + offset.y()) * cam.pixel_delta_v);

@@ -119,7 +119,9 @@ class camera {
 
     vec3 sample_square() const {
         // Returns the vector to a random point in the [-.5,-.5]-[+.5,+.5] unit square.
-        return vec3(random_double() - 0.5, random_double() - 0.5, 0);
+        // NOTE: not random right now!
+        // return vec3(random_double() - 0.5, random_double() - 0.5, 0);
+        return vec3(0,0,0);
     }
 
     vec3 sample_disk(double radius) const {
@@ -142,6 +144,8 @@ class camera {
         hit_record rec;
 
         if (world.hit(r, interval(0.001, infinity), rec)) {
+            // NOTE: need to change to 1 sample to use following line
+            return 0.5 * (rec.normal + color(1,1,1));
             ray scattered;
             color attenuation;
             if (rec.mat->scatter(r, rec, attenuation, scattered, j, i))

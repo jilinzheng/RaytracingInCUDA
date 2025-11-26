@@ -1,5 +1,14 @@
 # **CUDA** Ray Tracing in One Weekend
 
+## Verification
+
+- started off with just scaled_ppm_diff between a run of cpu and global gpu - very concerning deep orange tint on everything
+- then removed points of randomness until everything was deterministic
+  - no random offset from pixel center
+  - 1 sample per pixel
+  - no defocus blur
+- double-precision floating point errors are not of concern
+
 ## How do I use this codebase?
 
 This codebase contains a little more than one implementation of raytracing in CUDA.

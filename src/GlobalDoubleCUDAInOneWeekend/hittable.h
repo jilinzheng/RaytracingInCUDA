@@ -47,7 +47,7 @@ __device__ bool hit_sphere(const sphere& s, const ray& r,
     double discriminant = h*h - a*c;
     if (discriminant < 0) return false;
 
-    double sqrtd = sqrt(discriminant);
+    double sqrtd = std::sqrt(discriminant);
 
     // find the nearest root that lies in the acceptable range.
     double root = (h - sqrtd) / a;
