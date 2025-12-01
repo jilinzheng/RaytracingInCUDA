@@ -144,9 +144,12 @@ class camera {
             ray scattered;
             color attenuation;
             if (rec.mat->scatter(r, rec, attenuation, scattered, j, i))
-                return (attenuation * ray_color(scattered, depth-1, world, j, i));
+                // NOTE: get rid of tint
+                // return (attenuation * ray_color(scattered, depth-1, world, j, i));
+                return ray_color(scattered, depth-1, world, j, i);
                 // NOTE: albedo test
                 // return attenuation;
+
             // ray was absorbed
             return color(0,0,0);
         }

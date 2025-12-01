@@ -53,7 +53,7 @@ __device__ bool hit_sphere(const sphere& s, const ray& r,
 
     // find the nearest root that lies in the acceptable range.
     double root = (h - sqrtd) / a;
-    root = 0; // hardcode for verification
+    // root = 0; // hardcode for verification
     if (!ray_t.surrounds(root)) {
         root = (h + sqrtd) / a;
         if (!ray_t.surrounds(root))

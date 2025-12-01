@@ -34,7 +34,7 @@ class sphere : public hittable {
 
         // Find the nearest root that lies in the acceptable range.
         auto root = (h - sqrtd) / a;
-        root = 0; // hardcode for verification
+        // root = 0; // hardcode for verification
         if (!ray_t.surrounds(root)) {
             root = (h + sqrtd) / a;
             if (!ray_t.surrounds(root))
