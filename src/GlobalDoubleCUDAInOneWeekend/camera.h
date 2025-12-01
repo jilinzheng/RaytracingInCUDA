@@ -86,8 +86,8 @@ __device__ color ray_color(const ray& r, int max_depth, const world& world,
         // track hits
         hit_record rec;
         if (hit_world(world, curr_ray, interval(0.001,infinity), rec)) {
-            // NOTE: need to change to 1 sample to use following line
-            return 0.5 * (rec.normal + color(1,1,1));
+            // NOTE: deterministic hit (only once)
+            // return 0.5 * (rec.normal + color(1,1,1));
             ray scattered;
             color attenuation;
             bool scatter_success = false;
@@ -113,6 +113,8 @@ __device__ color ray_color(const ray& r, int max_depth, const world& world,
             if (scatter_success) {
                 // accumulate color
                 curr_attenuation = curr_attenuation * attenuation;
+                // NOTE: albedo test
+                // return attenuation;
                 // update for next bounce
                 curr_ray = scattered;
             }
@@ -123,7 +125,7 @@ __device__ color ray_color(const ray& r, int max_depth, const world& world,
         else {
             vec3 unit_direction = unit_vector(r.direction());
             double a = 0.5 * (unit_direction.y() + 1.0);
-            return curr_attenuation*((1.0-a)*color(1.0,1.0,1.0)+a*color(0.5,0.7,1.0));
+            return (curr_attenuation*((1.0-a)*color(1.0,1.0,1.0)+a*color(0.5,0.7,1.0)));
         }
     }
     // max depth reached
@@ -135,6 +137,14 @@ __global__ void render(vec3 *pixel_buffer, camera cam, world *d_world, curandSta
     int j = threadIdx.y + blockIdx.y * blockDim.y;
     if((i >= cam.img_width) || (j >= cam.img_height)) return;
     int pixel_index = j*cam.img_width+i;
+
+    if (pixel_index == 0 && i == 0) {
+        // Print the material data the GPU is seeing
+        // (Adjust index to one of your known spheres, e.g., 1)
+        material m = d_world->spheres[0].mat[0];
+        printf("GPU Sphere 0 Material: Type=%d, Albedo=(%f, %f, %f)\n", 
+            (int)m.type, m.albedo.x(), m.albedo.y(), m.albedo.z());
+    }
 
     // load state
     curandState thread_rand_state = rand_states[pixel_index];

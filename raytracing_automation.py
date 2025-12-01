@@ -22,6 +22,7 @@ NVCC_FLAGS = [
     "arch=compute_86,code=sm_86",
     # "-gencode", "arch=compute_70,code=sm_70",
     "-rdc=true",
+    "--fmad=false",  # <--- ADD THIS to disable Fused Multiply-Add
 ]
 
 # Target Definitions
