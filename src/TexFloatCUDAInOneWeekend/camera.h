@@ -125,7 +125,7 @@ __device__ color ray_color(const ray& r, int max_depth, curandState *thread_rand
         }
         // ray hit nothing/background, add blue-to-white gradient background and end
         else {
-            vec3 unit_direction = unit_vector(r.direction());
+            vec3 unit_direction = unit_vector(curr_ray.direction());
             double a = 0.5 * (unit_direction.y() + 1.0);
             return curr_attenuation*((1.0-a)*color(1.0,1.0,1.0)+a*color(0.5,0.7,1.0));
         }

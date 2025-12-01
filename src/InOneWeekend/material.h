@@ -18,7 +18,7 @@
 
 
 class material {
-public:
+  public:
     virtual ~material() = default;
 
     virtual bool scatter(
@@ -35,13 +35,11 @@ class lambertian : public material {
 
     bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered, int j, int i)
     const override {
-        // auto scatter_direction = rec.normal + random_unit_vector();
-        // NOTE: deterministic scattering
-        vec3 scatter_direction = rec.normal;
+        auto scatter_direction = rec.normal + random_unit_vector();
 
         // Catch degenerate scatter direction
-        // if (scatter_direction.near_zero())
-        //     scatter_direction = rec.normal;
+        if (scatter_direction.near_zero())
+            scatter_direction = rec.normal;
 
         scattered = ray(rec.p, scatter_direction);
         attenuation = albedo;
@@ -59,10 +57,8 @@ class metal : public material {
 
     bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered, int j, int i)
     const override {
-        // vec3 reflected = reflect(r_in.direction(), rec.normal);
-        // reflected = unit_vector(reflected) + (fuzz * random_unit_vector());
-        // NOTE: deterministic scatter
-        vec3 reflected = unit_vector(reflect(r_in.direction(), rec.normal));
+        vec3 reflected = reflect(r_in.direction(), rec.normal);
+        reflected = unit_vector(reflected) + (fuzz * random_unit_vector());
         scattered = ray(rec.p, reflected);
         attenuation = albedo;
         return (dot(scattered.direction(), rec.normal) > 0);
@@ -90,14 +86,10 @@ class dielectric : public material {
         bool cannot_refract = ri * sin_theta > 1.0;
         vec3 direction;
 
-        // if (cannot_refract || reflectance(cos_theta, ri) > random_double())
-        // NOTE: deterministic scattering
-        // if (cannot_refract || reflectance(cos_theta, ri) > 0.5)
-        //     direction = reflect(unit_direction, rec.normal);
-        // else
-        //     direction = refract(unit_direction, rec.normal, ri);
-        // NOTE: deterministic scattering
-        direction = reflect(unit_direction, rec.normal);
+        if (cannot_refract || reflectance(cos_theta, ri) > random_double())
+            direction = reflect(unit_direction, rec.normal);
+        else
+            direction = refract(unit_direction, rec.normal, ri);
 
         scattered = ray(rec.p, direction);
         return true;

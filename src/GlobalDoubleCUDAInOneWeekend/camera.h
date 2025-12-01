@@ -69,7 +69,9 @@ struct camera {
         defocus_disk_u = u * defocus_radius;
         defocus_disk_v = v * defocus_radius;
     }
-};
+
+
+  };
 
 __device__ point3 defocus_disk_sample(camera& cam,curandState *thread_rand_state) {
     point3 p = random_in_unit_disk(thread_rand_state);
