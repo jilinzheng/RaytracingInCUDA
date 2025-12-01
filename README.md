@@ -21,6 +21,8 @@ tool, detailing my GPU specifications.
 I hope everything below will be somewhat comprehensible and useful! I was able to achieve over 150x
 speedups over the serial baseline, so I hope others may find similar results.
 
+Update (December 1st, 2025): I have moved from the Bash scripts detailed below to an unified Python automation script, [`raytracing_automation`](./raytracing_automation.py). The Bash scripts in [`old-bash-scripts`](./old-bash-scripts) should still work, but you will have to move them to the root directory or adjust the paths in the scripts manually.
+
 ### Building
 
 To build (and rebuild) any of the CUDA implementations, several `rebuild_*.sh` bash scripts are
