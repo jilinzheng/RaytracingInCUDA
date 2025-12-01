@@ -86,8 +86,6 @@ __device__ color ray_color(const ray& r, int max_depth, const world& world,
         // track hits
         hit_record rec;
         if (hit_world(world, curr_ray, interval(0.001,infinity), rec)) {
-            // NOTE: deterministic hit (only once)
-            // return 0.5 * (rec.normal + color(1,1,1));
             ray scattered;
             color attenuation;
             bool scatter_success = false;
@@ -112,13 +110,7 @@ __device__ color ray_color(const ray& r, int max_depth, const world& world,
 
             if (scatter_success) {
                 // accumulate color
-
-                // NOTE: get rid of tint
-                // curr_attenuation = curr_attenuation * attenuation;
-                curr_attenuation = attenuation;
-
-                // NOTE: albedo test
-                // return attenuation;
+                curr_attenuation = curr_attenuation * attenuation;
                 // update for next bounce
                 curr_ray = scattered;
             }
@@ -129,9 +121,7 @@ __device__ color ray_color(const ray& r, int max_depth, const world& world,
         else {
             vec3 unit_direction = unit_vector(curr_ray.direction());
             double a = 0.5 * (unit_direction.y() + 1.0);
-            // NOTE: get rid of tint
-            // return (curr_attenuation*((1.0-a)*color(1.0,1.0,1.0)+a*color(0.5,0.7,1.0)));
-            return ((1.0-a)*color(1.0,1.0,1.0)+a*color(0.5,0.7,1.0));
+            return curr_attenuation*((1.0-a)*color(1.0,1.0,1.0)+a*color(0.5,0.7,1.0));
         }
     }
     // max depth reached
@@ -144,14 +134,6 @@ __global__ void render(vec3 *pixel_buffer, camera cam, world *d_world, curandSta
     if((i >= cam.img_width) || (j >= cam.img_height)) return;
     int pixel_index = j*cam.img_width+i;
 
-    if (pixel_index == 0 && i == 0) {
-        // Print the material data the GPU is seeing
-        // (Adjust index to one of your known spheres, e.g., 1)
-        material m = d_world->spheres[0].mat[0];
-        printf("GPU Sphere 0 Material: Type=%d, Albedo=(%f, %f, %f)\n", 
-            (int)m.type, m.albedo.x(), m.albedo.y(), m.albedo.z());
-    }
-
     // load state
     curandState thread_rand_state = rand_states[pixel_index];
 
@@ -162,11 +144,9 @@ __global__ void render(vec3 *pixel_buffer, camera cam, world *d_world, curandSta
         // construct a ray originating from camera center,
         // directed at a randomly sampled point (in a square)
         // around the pixel location i,j; NOTE: this is get_ray(i,j)
-        // vec3 offset = vec3(curand_uniform_double(&thread_rand_state) - 0.5,
-        //                    curand_uniform_double(&thread_rand_state) - 0.5,
-        //                    0);
-        // NOTE: not random right now!
-        vec3 offset = vec3(0,0,0);
+        vec3 offset = vec3(curand_uniform_double(&thread_rand_state) - 0.5,
+                           curand_uniform_double(&thread_rand_state) - 0.5,
+                           0);
         point3 pixel_sample = cam.pixel00_loc
                                + ((i + offset.x()) * cam.pixel_delta_u)
                                + ((j + offset.y()) * cam.pixel_delta_v);

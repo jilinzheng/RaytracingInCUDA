@@ -38,7 +38,7 @@ class vec3 {
     }
 
     __host__ __device__ double length() const {
-        return std::sqrt(length_squared());
+        return sqrt(length_squared());
     }
 
     __host__ __device__ double length_squared() const {
@@ -123,7 +123,7 @@ __device__ inline vec3 random_unit_vector(curandState *rand_state) {
         vec3 p(x, y, z);
         double lensq = dot(p, p);
         if (1e-160 < lensq && lensq <= 1.0) // using a smaller epsilon for double
-            return p / std::sqrt(lensq);
+            return p / sqrt(lensq);        // use sqrtf for double
     }
 }
 
@@ -132,7 +132,7 @@ __device__ inline vec3 reflect(const vec3& v, const vec3& n) {
 }
 
 __device__ inline vec3 refract(const vec3& uv, const vec3& n, double etai_over_etat) {
-    double cos_theta = std::fmin(dot(-uv, n), 1.0);
+    double cos_theta = fmin(dot(-uv, n), 1.0);
     vec3 r_out_perp = etai_over_etat * (uv + cos_theta*n);
     vec3 r_out_parallel = -sqrt(fabs(1.0 - r_out_perp.length_squared())) * n;
     return r_out_perp + r_out_parallel;

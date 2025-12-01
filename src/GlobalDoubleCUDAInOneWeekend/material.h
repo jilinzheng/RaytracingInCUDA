@@ -18,12 +18,11 @@ enum class MaterialType {
 };
 
 // generic material struct
-struct __align__(16) material {
+struct material {
+    MaterialType type;
     color albedo;
     double fuzz;
     double refraction_index;
-    MaterialType type;
-    int padding;
 
     __host__ __device__ material() {}
     // lambertian constructor
@@ -42,12 +41,10 @@ struct __align__(16) material {
 __device__ bool lambertian_scatter(const ray& r_in, const hit_record& rec,
     color& attenuation, ray& scattered, curandState *thread_rand_state) {
     // choose lambertian diffuse reflectance to always scatter
-    vec3 scatter_direction = rec.normal;
-                            // NOTE: deterministic scattering
-                            // + random_unit_vector(thread_rand_state);
+    vec3 scatter_direction = rec.normal
+                            + random_unit_vector(thread_rand_state);
     // catch degenerate scatter direction
-    // if (scatter_direction.near_zero())
-    //     scatter_direction = rec.normal;
+    if (scatter_direction.near_zero()) scatter_direction = rec.normal;
 
     scattered = ray(rec.p, scatter_direction);
     attenuation = rec.mat->albedo;
@@ -56,11 +53,9 @@ __device__ bool lambertian_scatter(const ray& r_in, const hit_record& rec,
 
 __device__ bool metal_scatter(const ray& r_in, const hit_record& rec,
     color& attenuation, ray& scattered, curandState *thread_rand_state) {
-    // vec3 reflected = reflect(r_in.direction(), rec.normal);
-    // reflected = unit_vector(reflected);
-    //             + (rec.mat->fuzz * random_unit_vector(thread_rand_state));
-    // NOTE: deterministic scatter
-    vec3 reflected = unit_vector(reflect(r_in.direction(), rec.normal));
+    vec3 reflected = reflect(r_in.direction(), rec.normal);
+    reflected = unit_vector(reflected)
+                + (rec.mat->fuzz * random_unit_vector(thread_rand_state));
     scattered = ray(rec.p, reflected);
     attenuation = rec.mat->albedo;
     return (dot(scattered.direction(), rec.normal) > 0);
@@ -70,7 +65,7 @@ __device__ bool metal_scatter(const ray& r_in, const hit_record& rec,
 __device__ inline double reflectance(double cosine, double refraction_index) {
     double r0 = (1-refraction_index)/(1+refraction_index);
     r0 = r0*r0;
-    return r0 + (1-r0)*pow((1-cosine),5);
+    return r0 + (1-r0)*powf((1-cosine),5);
 }
 
 __device__ bool dieletric_scatter(const ray& r_in, const hit_record& rec,
@@ -88,13 +83,9 @@ __device__ bool dieletric_scatter(const ray& r_in, const hit_record& rec,
     vec3 direction;
 
     // Schlick's approximation for reflectance
-    // if (cannot_refract || reflectance(cos_theta, ri) > device_random_double(thread_rand_state))
-    // NOTE: deterministic scattering
-    // if (cannot_refract || reflectance(cos_theta, ri) > 0.5)
-    //     direction = reflect(unit_direction, rec.normal);
-    // else direction = refract(unit_direction, rec.normal, ri);
-    // NOTE: deterministic scattering
-    direction = reflect(unit_direction, rec.normal);
+    if (cannot_refract || reflectance(cos_theta, ri) > device_random_double(thread_rand_state))
+        direction = reflect(unit_direction, rec.normal);
+    else direction = refract(unit_direction, rec.normal, ri);
 
     scattered = ray(rec.p, direction);
     return true;
